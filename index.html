@@ -44,77 +44,147 @@ body {
 }
 
 
+
 .sched-wrap{
   overflow-x:auto;background:var(--card);border:1px solid var(--border);
-  border-radius:var(--radius);padding:10px;
+  border-radius:var(--radius);padding:14px;
+  box-shadow:var(--shadow);
 }
 .sched{
   display:grid;
-  grid-template-columns:52px repeat(7,minmax(110px,1fr));
-  min-width:820px;
+  grid-template-columns:56px repeat(7,minmax(120px,1fr));
+  min-width:900px;
   font-family:'DM Sans',sans-serif;
+  border-radius:12px;
+  overflow:hidden;
 }
 .sched-corner{background:transparent}
+
+/* Cabecera días */
 .sched-head{
-  font-size:.72rem;text-align:center;padding:8px 4px;color:var(--text3);
-  font-weight:500;border-bottom:1px solid var(--border);
-  position:sticky;top:0;background:var(--card);z-index:2;
+  padding:10px 6px 9px;text-align:center;
+  color:var(--text3);font-size:.68rem;font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;
+  background:var(--card);border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:3;
 }
 .sched-head .sched-day-num{
-  display:block;font-family:'Lora',serif;font-size:.95rem;color:var(--text);font-weight:600;margin-top:2px;
+  display:block;font-family:'Lora',serif;font-size:1.15rem;
+  color:var(--text);font-weight:600;margin-top:3px;letter-spacing:0;
 }
-.sched-head.today{color:var(--green-dk)}
-.sched-head.today .sched-day-num{color:var(--green-md)}
-.sched-hours{
-  border-right:1px solid var(--border);
-  background:var(--card);
+.sched-head.today{
+  color:var(--green-dk);
+  background:linear-gradient(180deg,var(--green-mist),var(--card));
 }
+.sched-head.today .sched-day-num{
+  color:#fff;background:var(--green-md);
+  display:inline-block;min-width:32px;padding:1px 6px;border-radius:20px;
+}
+
+/* Columna horas */
+.sched-hours{background:var(--card);border-right:1px solid var(--border)}
 .sched-hours div{
-  height:48px;font-size:.62rem;color:var(--text3);
-  text-align:right;padding-right:6px;box-sizing:border-box;
-  line-height:48px;
+  height:52px;font-size:.63rem;color:var(--text3);
+  text-align:right;padding-right:8px;box-sizing:border-box;
+  line-height:52px;font-weight:500;
 }
+
+/* Columnas días */
 .sched-col{
-  position:relative;
-  border-left:1px solid var(--border);
+  position:relative;border-left:1px solid var(--border);
   background:
-    repeating-linear-gradient(180deg,transparent 0,transparent 47px,rgba(160,140,110,0.18) 47px,rgba(160,140,110,0.18) 48px);
+    repeating-linear-gradient(180deg,
+      transparent 0, transparent 25px,
+      rgba(160,140,110,0.10) 25px, rgba(160,140,110,0.10) 26px,
+      transparent 26px, transparent 51px,
+      rgba(160,140,110,0.22) 51px, rgba(160,140,110,0.22) 52px);
 }
-.sched-col.today{background-color:var(--green-mist)}
+.sched-col.today{
+  background:
+    repeating-linear-gradient(180deg,
+      rgba(230,240,220,0.55) 0, rgba(230,240,220,0.55) 25px,
+      rgba(160,180,140,0.35) 25px, rgba(160,180,140,0.35) 26px,
+      rgba(230,240,220,0.55) 26px, rgba(230,240,220,0.55) 51px,
+      rgba(160,180,140,0.55) 51px, rgba(160,180,140,0.55) 52px);
+}
+
+/* Bloques fijos */
 .sched-block{
-  position:absolute;left:4px;right:4px;
-  border-radius:6px;padding:3px 6px;
-  font-size:.66rem;overflow:hidden;
+  position:absolute;left:3px;right:3px;
+  border-radius:7px;padding:4px 7px;
+  font-size:.68rem;overflow:hidden;
   color:#1a1208;
-  box-shadow:0 1px 3px rgba(0,0,0,.12);
+  box-shadow:0 1px 3px rgba(0,0,0,.15), inset 0 0 0 1px rgba(255,255,255,.35);
   box-sizing:border-box;line-height:1.25;
   display:flex;flex-direction:column;gap:1px;
-  min-height:18px;
-  cursor:pointer;
+  cursor:pointer;transition:transform .12s, box-shadow .12s;
+  border-left:3px solid rgba(0,0,0,.18);
+}
+.sched-block:hover{
+  transform:translateY(-1px);
+  box-shadow:0 4px 10px rgba(0,0,0,.22);
+  z-index:5;
 }
 .sched-block strong{
-  font-size:.68rem;font-weight:600;
+  font-size:.72rem;font-weight:600;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
-.sched-block .sched-block-time{font-size:.6rem;opacity:.7;white-space:nowrap}
+.sched-block .sched-block-time{
+  font-size:.6rem;opacity:.72;white-space:nowrap;font-weight:500;
+}
+
 .sched-block.sched-task{
-  background:rgba(255,255,255,.92) !important;
+  background:linear-gradient(180deg,#ffffff,#f6fbf0) !important;
   border:1.5px dashed var(--green-md);
+  border-left:3px solid var(--green-md);
   color:var(--green-dk);
-  cursor:default;
-  padding:2px 5px;
+  cursor:pointer;
+  padding:4px 7px;
+  display:flex;flex-direction:column;gap:2px;
+  align-items:flex-start;justify-content:flex-start;
+  overflow:hidden;
+  box-sizing:border-box;
+  line-height:1.2;
 }
-.sched-block.sched-task strong{color:var(--green-dk);font-weight:600}
-.sched-block.sched-task.done{opacity:.55}
-.sched-block.sched-task.done strong{text-decoration:line-through}
-.sched-empty{
-  padding:1.5rem;text-align:center;color:var(--text3);font-size:.85rem;
+.sched-block.sched-task .task-time-pill{
+  font-size:.6rem;font-weight:700;color:#fff;
+  background:var(--green-md);
+  padding:1px 7px;border-radius:20px;flex-shrink:0;
+  white-space:nowrap;
 }
+.sched-block.sched-task .task-name{
+  font-size:.7rem;font-weight:600;
+  color:var(--green-dk);
+  white-space:normal;
+  word-break:break-word;
+  line-height:1.25;
+  overflow:hidden;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  width:100%;
+}
+
+/* Línea "ahora" */
+.sched-now-line{
+  position:absolute;left:0;right:0;height:2px;
+  background:var(--red);z-index:4;pointer-events:none;
+}
+.sched-now-line::before{
+  content:'';position:absolute;left:-4px;top:-3px;
+  width:8px;height:8px;border-radius:50%;background:var(--red);
+}
+
+/* Leyenda */
 .sched-legend{
-  display:flex;gap:14px;flex-wrap:wrap;align-items:center;
-  font-size:.72rem;color:var(--text3);margin:0.8rem 0 0;
+  display:flex;gap:18px;flex-wrap:wrap;align-items:center;
+  font-size:.72rem;color:var(--text3);margin:0.9rem 0 0;
 }
-.sched-legend .dot{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:middle}
+.sched-legend .dot{
+  display:inline-block;width:13px;height:13px;border-radius:4px;
+  margin-right:6px;vertical-align:middle;
+}
+
 
 
 /* NAV */
@@ -2307,10 +2377,11 @@ textarea {
         <div class="form-group-full"><label>Tarea *</label><input type="text" id="taskName" placeholder="Ej: Ir al súper" maxlength="80"></div>
       </div>
 
-      <div class="habit-step" data-step="schedule">
+         <div class="habit-step" data-step="schedule">
         <p class="wizard-step-label">¿Cuándo y con qué prioridad?</p>
-        <div class="form-row">
-          <div class="form-group"><label>Hora (opcional)</label><input type="time" id="taskTime"></div>
+        <div class="form-row-3">
+          <div class="form-group"><label>Hora inicio (opcional)</label><input type="time" id="taskTime"></div>
+          <div class="form-group"><label>Hora fin (opcional)</label><input type="time" id="taskEndTime"></div>
           <div class="form-group"><label>Prioridad</label>
             <select id="taskPriority"><option value="high">🔴 Alta</option><option value="mid" selected>🟡 Media</option><option value="low">🟢 Baja</option></select>
           </div>
@@ -2812,7 +2883,6 @@ textarea {
       <button class="btn btn-blue btn-sm" onclick="openTaskModal()">+ Nueva tarea</button>
       <button class="btn btn-blue btn-sm" onclick="openRecurringModal()">+ Recurrente</button>
       <button class="btn btn-blue btn-sm" onclick="openAgendaCatModal()">+ Categorías</button>
-      <button class="btn btn-blue btn-sm" onclick="navigateTo('horario')">+ Horario semanal</button>
       <div style="display:flex;gap:6px;flex-wrap:wrap" id="agendaFilterBtns">
         <button class="btn btn-secondary btn-xs active-filter" onclick="filterAgenda('all',this)">Todas</button>
       </div>
@@ -2844,11 +2914,18 @@ textarea {
 
   <!-- HORARIO SEMANAL -->
 <div class="page" id="page-horario">
-  <div class="page-header"><h2>🗓️ Horario semanal</h2>
-    <p>Tus bloques fijos (trabajo, clases...) y tus tareas con hora de esta semana (borde discontinuo)</p></div>
-  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:1.2rem">
+  <div class="page-header">
+    <h2>🗓️ Horario semanal</h2>
+    <p id="scheduleSubtitle">Tus bloques fijos y todas tus tareas con hora</p>
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:1.2rem;align-items:center">
     <button class="btn btn-blue btn-sm" onclick="openBlockModal()">+ Nuevo bloque</button>
     <button class="btn btn-secondary btn-sm" onclick="navigateTo('agenda')">← Agenda</button>
+    <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
+      <button class="btn btn-secondary btn-xs" onclick="changeScheduleWeek(-1)">← Semana</button>
+      <button class="btn btn-secondary btn-xs" onclick="changeScheduleWeek(0)" id="scheduleTodayBtn">Hoy</button>
+      <button class="btn btn-secondary btn-xs" onclick="changeScheduleWeek(1)">Semana →</button>
+    </div>
   </div>
   <div class="sched-wrap"><div class="sched" id="scheduleGrid"></div></div>
   <div id="scheduleLegend"></div>
@@ -3637,6 +3714,7 @@ let obligatoryCoreHabits=["orden","sueno"];
 let disabledBuiltinGoals=[];
 let builtinGoalsHomeVisible = {__german:true,__spagatt:true,__books:true};
 let agendaViewDate=null; // null = hoy; si no, un date string YYYY-MM-DD
+let scheduleWeekOffset = 0; // 0 = semana actual, -1 = anterior, +1 = siguiente…
 
 function changeAgendaDay(delta){
   if(delta===0){agendaViewDate=null;}
@@ -6110,6 +6188,7 @@ function openTaskModal(editId){
     if(t){
       document.getElementById("taskName").value=t.name;
       document.getElementById("taskTime").value=t.time||"";
+      document.getElementById("taskEndTime").value=t.endTime||"";
       document.getElementById("taskPriority").value=t.priority;
       document.getElementById("taskCategory").value=t.category;
       document.getElementById("taskDate").value=t.date;
@@ -6125,7 +6204,7 @@ function openTaskModal(editId){
       }
     }
   } else {
-    ["taskName","taskTime","taskNotes"].forEach(id=>{document.getElementById(id).value="";});
+    ["taskName","taskTime","taskEndTime","taskNotes"].forEach(id=>{document.getElementById(id).value="";});
     document.getElementById("taskPriority").value="mid";document.getElementById("taskCategory").value="Personal";
     updateTaskTimesInputs();
   }
@@ -6178,6 +6257,9 @@ function deleteTaskCheck(taskId,checkId){
 
 function saveTask(){
   const name=document.getElementById("taskName").value.trim();
+    const tStart=document.getElementById("taskTime")?.value||"";
+  const tEnd=document.getElementById("taskEndTime")?.value||"";
+  if(tStart&&tEnd&&tEnd<=tStart){toast("La hora fin debe ser posterior a la de inicio");return;}
   if(!name){toast("Escribe la tarea");return;}
   const editId=document.getElementById("taskEditId").value;
   const timesPerDay=parseInt(document.getElementById("taskTimesPerDay")?.value)||1;
@@ -6194,6 +6276,7 @@ function saveTask(){
     id:editId||"t_"+Date.now(),
     name,
     time:timesPerDay>1?(multiTimes[0]||""):document.getElementById("taskTime").value,
+    endTime:document.getElementById("taskEndTime").value,
     priority:document.getElementById("taskPriority").value,
     category:document.getElementById("taskCategory").value,
     date:document.getElementById("taskDate").value,
@@ -6329,14 +6412,18 @@ function changeTaskTime(id){
     <h3>🕐 Cambiar hora</h3>
     <p style="font-size:0.84rem;color:var(--text2);margin-bottom:0.8rem"><strong>${t.name}</strong></p>
     <p style="font-size:0.76rem;color:var(--text3);margin-bottom:0.8rem">Se cambiará solo la hora de esta tarea en este día concreto (no afecta a los demás días si es recurrente).</p>
-    <div class="form-group-full" style="margin-bottom:0.8rem">
-      <label>Nueva hora</label>
+        <div class="form-group-full" style="margin-bottom:0.6rem">
+      <label>Hora inicio</label>
       <input type="time" id="changeTimeInput" value="${t.time||""}">
+    </div>
+    <div class="form-group-full" style="margin-bottom:0.8rem">
+      <label>Hora fin (opcional)</label>
+      <input type="time" id="changeEndTimeInput" value="${t.endTime||""}">
     </div>
     <div class="form-group-full">
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
         <input type="checkbox" id="changeTimeRemove" ${t.time?"":"checked"} onchange="document.getElementById('changeTimeInput').disabled=this.checked">
-        Quitar la hora (dejar sin hora)
+        Quitar la hora
       </label>
     </div>
     <div class="modal-footer">
@@ -6350,30 +6437,33 @@ function changeTaskTime(id){
 
 function confirmChangeTaskTime(id){
   const t=agendaTasks.find(x=>x.id===id);if(!t)return;
-  const input=document.getElementById("changeTimeInput");
+  const startInp=document.getElementById("changeTimeInput");
+  const endInp=document.getElementById("changeEndTimeInput");
   const removeBox=document.getElementById("changeTimeRemove");
-  if(!input||!removeBox)return;
-  let newTime="";
+  if(!startInp||!removeBox)return;
+  let newStart="",newEnd="";
   if(!removeBox.checked){
-    if(!input.value){toast("Selecciona una hora o marca 'Quitar la hora'");return;}
-    newTime=input.value;
+    if(!startInp.value){toast("Selecciona una hora o marca 'Quitar la hora'");return;}
+    newStart=startInp.value;
+    newEnd=endInp?endInp.value:"";
+    if(newEnd&&newEnd<=newStart){toast("La hora fin debe ser posterior a la de inicio");return;}
   }
-  t.time=newTime;
+  t.time=newStart;
+  t.endTime=newEnd;
   if(t.timesPerDay>1){
     t.multiTimes=t.multiTimes||[];
-    t.multiTimes[0]=newTime;
+    t.multiTimes[0]=newStart;
   }
-  // Guardar override de hora para esta fecha concreta (para recurrentes)
   if(t.recurringId){
     const rec=recurringTasks.find(r=>r.id===t.recurringId);
     if(rec){
       rec.timeOverrides=rec.timeOverrides||{};
-      rec.timeOverrides[t.date]=newTime;
+      rec.timeOverrides[t.date]={start:newStart,end:newEnd};
     }
   }
   document.getElementById("changeTimeModal")?.remove();
-  save();renderAgenda();
-  toast(newTime?`🕐 Hora actualizada: ${newTime}`:"🕐 Hora quitada");
+  save();renderAgenda();renderSchedule();
+  toast(newStart?`🕐 Hora actualizada: ${newStart}${newEnd?"–"+newEnd:""}`:"🕐 Hora quitada");
 }
 
 function filterAgenda(filter,btn){
@@ -6555,8 +6645,21 @@ function getPendientes(){
 
 
 // HORARIO SEMANAL
-const SCHED_START=6, SCHED_END=24, HOUR_PX=48;
+const SCHED_START=6, SCHED_END=24, HOUR_PX=52;
+let _schedNowTimer=null;
 
+function changeScheduleWeek(offset){
+  if(offset===0) scheduleWeekOffset=0;
+  else scheduleWeekOffset+=offset;
+  renderSchedule();
+}
+
+function getScheduleMonday(){
+  const mon=new Date();
+  mon.setHours(0,0,0,0);
+  mon.setDate(mon.getDate()-((mon.getDay()+6)%7)+scheduleWeekOffset*7);
+  return mon;
+}
 
 function renderSchedule(){
   const el=document.getElementById("scheduleGrid");if(!el)return;
@@ -6565,16 +6668,31 @@ function renderSchedule(){
   const toMin=s=>{const [h,m]=s.split(":").map(Number);return h*60+m;};
   const H=SCHED_END-SCHED_START, base=SCHED_START*60, endMin=SCHED_END*60;
 
-  const mon=new Date();mon.setHours(0,0,0,0);
-  mon.setDate(mon.getDate()-((mon.getDay()+6)%7));   // lunes de esta semana
+  const mon=getScheduleMonday();
+  const sun=new Date(mon);sun.setDate(mon.getDate()+6);
+
+  // Subtítulo dinámico
+  const sub=document.getElementById("scheduleSubtitle");
+  if(sub){
+    const f=d=>d.toLocaleDateString("es-ES",{day:"numeric",month:"short"});
+    sub.textContent=`Semana del ${f(mon)} al ${f(sun)} · ${agendaTasks.filter(t=>t.time&&!t.failed).length} tareas con hora en total`;
+  }
+  const todayBtn=document.getElementById("scheduleTodayBtn");
+  if(todayBtn)todayBtn.style.display=scheduleWeekOffset===0?"none":"";
+
   const dk=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   const todayDow=new Date().getDay();
+  const now=new Date();
+  const nowMin=now.getHours()*60+now.getMinutes();
 
   // Cabecera
   let html=`<div class="sched-corner"></div>`;
   order.forEach((d,i)=>{
     const dt=new Date(mon);dt.setDate(mon.getDate()+i);
-    html+=`<div class="sched-head${d===todayDow?" today":""}">${names[d]}<span class="sched-day-num">${dt.getDate()}</span></div>`;
+    const isToday=scheduleWeekOffset===0 && d===todayDow;
+    html+=`<div class="sched-head${isToday?" today":""}">
+      ${names[d]}<span class="sched-day-num">${dt.getDate()}</span>
+    </div>`;
   });
 
   // Columna de horas
@@ -6586,14 +6704,30 @@ function renderSchedule(){
   order.forEach((d,i)=>{
     const dt=new Date(mon);dt.setDate(mon.getDate()+i);
     const key=dk(dt);
-    let col=`<div class="sched-col${d===todayDow?" today":""}" style="height:${H*HOUR_PX}px">`;
+    const isToday=scheduleWeekOffset===0 && d===todayDow;
 
-    // 1) Bloques fijos (trabajo, clases…)
+    // Tareas con hora de ESE día:
+    //  - normales (sin recurringId)
+    //  - recurrentes (con recurringId) → ya están en agendaTasks
+    //  - pospuestas (wasPostponed) → también están en agendaTasks con la nueva date
+    // Se incluyen completadas (se ven atenuadas) y se excluyen las fallidas.
+    const dayTasks = agendaTasks
+      .filter(t => t.date===key && t.time && !t.failed)
+      .sort((a,b)=>{
+        // Primero las no completadas, luego por hora
+        if(!!a.done!==!!b.done) return a.done?1:-1;
+        return a.time.localeCompare(b.time);
+      });
+
+    let col=`<div class="sched-col${isToday?" today":""}" style="height:${H*HOUR_PX}px">`;
+
+    // 1) Bloques fijos
     weeklyBlocks.filter(b=>(b.days||[]).includes(d)).forEach(b=>{
       const s=Math.max(toMin(b.start),base);
       const e=Math.min(toMin(b.end),endMin);
       if(e<=s)return;
-      col+=`<div class="sched-block" style="top:${(s-base)/60*HOUR_PX}px;height:${Math.max(22,(e-s)/60*HOUR_PX)}px;background:${b.color}"
+      col+=`<div class="sched-block"
+        style="top:${(s-base)/60*HOUR_PX}px;height:${Math.max(24,(e-s)/60*HOUR_PX)}px;background:${b.color}"
         onclick="openBlockModal('${b.id}')" title="${b.name} · ${b.start}–${b.end}">
         <strong>${b.name}</strong>
         <span class="sched-block-time">${b.start}–${b.end}</span>
@@ -6601,18 +6735,36 @@ function renderSchedule(){
     });
 
     // 2) Tareas con hora
-    agendaTasks
-      .filter(t=>t.date===key && t.time && !t.failed)
-      .sort((a,b)=>a.time.localeCompare(b.time))
-      .forEach(t=>{
-        const s=toMin(t.time);
-        if(s<base||s>=endMin)return;
-        col+=`<div class="sched-block sched-task${t.done?" done":""}"
-          style="top:${(s-base)/60*HOUR_PX}px;height:22px;"
-          title="${t.time} · ${t.name}">
-          <strong>${t.time} ${t.name}</strong>
-        </div>`;
-      });
+        dayTasks.forEach(t=>{
+      const s=toMin(t.time);
+      if(s<base||s>=endMin)return;
+      let e=endMin;
+      if(t.endTime){
+        const eMin=toMin(t.endTime);
+        e=Math.min(eMin,endMin);
+      }else{
+        e=Math.min(s+30,endMin); // 30 min por defecto si no hay hora fin
+      }
+      if(e<=s)e=s+15; // mínimo visible
+      const tags=[];
+      if(t.recurringId) tags.push("🔁");
+      if(t.wasPostponed) tags.push("📆");
+      if(t.done) tags.push("✓");
+      const tagStr=tags.join(" ");
+      const timeLabel=t.endTime?`${t.time}–${t.endTime}`:t.time;
+      col+=`<div class="sched-block sched-task${t.done?" done":""}"
+        style="top:${(s-base)/60*HOUR_PX}px;height:${Math.max(42,(e-s)/60*HOUR_PX)}px;"
+        title="${timeLabel} · ${t.name}${t.category?" · "+t.category:""}${t.wasPostponed?" (pospuesta)":""}${t.recurringId?" (recurrente)":""}"
+        onclick="openTaskMenu('${t.id}',this)">
+        <span class="task-time-pill">${timeLabel}</span>
+        <span class="task-name">${t.name}${tagStr?" "+tagStr:""}</span>
+      </div>`;
+    });
+
+    // 3) Línea "ahora" en la columna de hoy
+    if(isToday && nowMin>=base && nowMin<endMin){
+      col+=`<div class="sched-now-line" style="top:${(nowMin-base)/60*HOUR_PX}px"></div>`;
+    }
 
     col+=`</div>`;
     html+=col;
@@ -6620,16 +6772,31 @@ function renderSchedule(){
 
   el.innerHTML=html;
 
-  // Leyenda (debajo del grid)
+  // Leyenda
   const legend=document.getElementById("scheduleLegend");
   if(legend){
     legend.innerHTML=`
       <div class="sched-legend">
-        <span><span class="dot" style="background:var(--green-mist);border:1.5px solid var(--green-md)"></span>Día actual</span>
-        <span><span class="dot" style="background:#bbf7d0"></span>Bloque fijo</span>
-        <span><span class="dot" style="background:#fff;border:1.5px dashed var(--green-md)"></span>Tarea con hora</span>
+        <span><span class="dot" style="background:#bbf7d0;border-left:3px solid rgba(0,0,0,.18)"></span>Bloque fijo</span>
+        <span><span class="dot" style="background:#fff;border:1.5px dashed var(--green-md);border-left:3px solid var(--green-md)"></span>Tarea con hora</span>
+        <span><span class="dot" style="background:var(--red)"></span>Hora actual</span>
+        <span>🔁 recurrente · 📆 pospuesta · ✓ completada</span>
       </div>`;
   }
+
+  // Mover la línea "ahora" cada minuto sin re-renderizar todo
+  if(_schedNowTimer) clearInterval(_schedNowTimer);
+  _schedNowTimer=setInterval(()=>{
+    // Solo actualiza si seguimos en la semana actual
+    if(scheduleWeekOffset!==0) return;
+    const lineEl=document.querySelector(".sched-now-line");
+    if(!lineEl) return;
+    const n=new Date();
+    const nm=n.getHours()*60+n.getMinutes();
+    if(nm<base||nm>=endMin){lineEl.style.display="none";return;}
+    lineEl.style.display="";
+    lineEl.style.top=`${(nm-base)/60*HOUR_PX}px`;
+  },60000);
 }
 
 function openBlockModal(id){
@@ -6747,7 +6914,7 @@ function renderNav(){
   const navLinks=document.getElementById("navLinks");
   const coreNavItems=[
     {page:"home",icon:"🏠",label:"Inicio"},
-    {page:"agenda",icon:"📅",label:"Agenda"},
+    {page:"agenda",icon:"⏳",label:"Agenda"},
     {page:"metas",icon:"🏆",label:"Metas"},
     {page:"horario",icon:"🗓️",label:"Horario semanal"},
   ];
@@ -8204,7 +8371,7 @@ function renderTaskItem(t){
     <div style="width:7px;height:7px;border-radius:50%;background:${prioColors[t.priority]||"var(--green-lt)"};flex-shrink:0"></div>
     <div class="task-name-wrap">
       <div class="task-name" style="${nameStyle}">${t.name}${progressLabel}${postponedLabel}</div>
-      ${t.time?`<div class="task-time" style="margin-top:2px">${t.time}</div>`:""}
+      ${t.time?`<div class="task-time" style="margin-top:2px">${t.time}${t.endTime?" – "+t.endTime:""}</div>`:""}
       ${t.notes?`<div style="font-size:0.7rem;color:var(--text3);margin-top:2px">${t.notes}</div>`:""}
       ${checksHtml}
     </div>
@@ -8339,6 +8506,8 @@ function navigateTo(pageId) {
     if(st){const rf=document.getElementById("runningExtraFields");if(rf)rf.style.display=st.value==="running"?"":"none";}
   }
   if(pageId==="bosque"){setTimeout(renderForest,100);}
+  if(pageId==="horario"){ generateRecurringForWeek(); setTimeout(renderSchedule,50); }
+  
   renderHabitsPages();
   history.pushState({page:pageId},"");
 }
@@ -8657,13 +8826,29 @@ function generateRecurringForWeek(){
       const dateStr=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       const alreadyExists=agendaTasks.find(t=>t.recurringId===r.id&&t.date===dateStr);
       if(alreadyExists)continue;
+
+      // Resolver hora de inicio y hora fin (con overrides por fecha)
+      // Formato nuevo: {start, end} | Formato antiguo: string (solo hora inicio)
+      let timeStr="";
+      let endStr="";
+      const override=r.timeOverrides?.[dateStr];
+      if(override){
+        if(typeof override==="string"){
+          timeStr=override;
+        }else{
+          timeStr=override.start||"";
+          endStr=override.end||"";
+        }
+      }else{
+        timeStr=r.times?.[dayNum]||"";
+      }
+
       agendaTasks.push({
         id:"rt_"+r.id+"_"+dateStr,
         name:r.name,
         xpEarned:0,
-        time: (r.timeOverrides && r.timeOverrides[dateStr]!==undefined)
-  ? r.timeOverrides[dateStr]
-  : (r.times?.[dayNum]||""),
+        time:timeStr,
+        endTime:endStr,
         priority:r.priority||"mid",
         category:r.category||"Personal",
         date:dateStr,
