@@ -91,7 +91,10 @@ body {
 
 /* Columnas días */
 .sched-col{
-  position:relative;border-left:1px solid var(--border);
+  position:relative;
+  border-left:1px solid var(--border);
+  padding-bottom:18px;
+  box-sizing:content-box;
   background:
     repeating-linear-gradient(180deg,
       transparent 0, transparent 25px,
@@ -2070,6 +2073,20 @@ textarea {
 @keyframes deathCardIn{
   from{opacity:0;transform:translateY(12px) scale(0.97);}
   to{opacity:1;transform:translateY(0) scale(1);}
+}
+
+@media(max-width:700px){
+  .sched-wrap{ padding:6px; }
+  .sched{
+    grid-template-columns:44px repeat(7,minmax(150px,1fr));
+    min-width:1150px;
+  }
+  .sched-head{ font-size:.62rem; padding:6px 4px 5px; }
+  .sched-head .sched-day-num{ font-size:1rem; min-width:26px; padding:1px 5px; }
+  .sched-hours div{ height:52px; line-height:52px; font-size:.58rem; padding-right:5px; }
+  .sched-block{ font-size:.68rem; }
+  .sched-block.sched-task .task-name{ font-size:.68rem; }
+  .sched-block.sched-task .task-time-pill{ font-size:.58rem; }
 }
 
 </style>
@@ -6727,7 +6744,7 @@ function renderSchedule(){
       const e=Math.min(toMin(b.end),endMin);
       if(e<=s)return;
       col+=`<div class="sched-block"
-        style="top:${(s-base)/60*HOUR_PX}px;height:${Math.max(24,(e-s)/60*HOUR_PX)}px;background:${b.color}"
+        style="top:${(s-base)/60*HOUR_PX}px;height:${Math.max(34, Math.min((e-s)/60*HOUR_PX, (endMin-base)/60*HOUR_PX - (s-base)/60*HOUR_PX))}px;background:${b.color}"
         onclick="openBlockModal('${b.id}')" title="${b.name} · ${b.start}–${b.end}">
         <strong>${b.name}</strong>
         <span class="sched-block-time">${b.start}–${b.end}</span>
@@ -6753,7 +6770,7 @@ function renderSchedule(){
       const tagStr=tags.join(" ");
       const timeLabel=t.endTime?`${t.time}–${t.endTime}`:t.time;
       col+=`<div class="sched-block sched-task${t.done?" done":""}"
-        style="top:${(s-base)/60*HOUR_PX}px;height:${Math.max(42,(e-s)/60*HOUR_PX)}px;"
+        style="top:${(s-base)/60*HOUR_PX}px;height:${Math.max(34, Math.min((e-s)/60*HOUR_PX, (endMin-base)/60*HOUR_PX - (s-base)/60*HOUR_PX))}px;"
         title="${timeLabel} · ${t.name}${t.category?" · "+t.category:""}${t.wasPostponed?" (pospuesta)":""}${t.recurringId?" (recurrente)":""}"
         onclick="openTaskMenu('${t.id}',this)">
         <span class="task-time-pill">${timeLabel}</span>
