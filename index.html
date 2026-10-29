@@ -43,15 +43,79 @@ body {
   overflow: hidden;
 }
 
-.sched-wrap{overflow-x:auto;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:8px}
-.sched{display:grid;grid-template-columns:38px repeat(7,minmax(70px,1fr));min-width:600px}
-.sched-head{font-size:.7rem;text-align:center;padding:6px 0;color:var(--text3);font-weight:500}
-.sched-head.today{color:var(--green-dk);font-weight:700}
-.sched-hours div{height:48px;font-size:.6rem;color:var(--text3);text-align:right;padding-right:4px;box-sizing:border-box}
-.sched-col{position:relative;border-left:1px solid var(--border);background:repeating-linear-gradient(180deg,transparent 0,transparent 47px,var(--border) 47px,var(--border) 48px)}
+
+.sched-wrap{
+  overflow-x:auto;background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:10px;
+}
+.sched{
+  display:grid;
+  grid-template-columns:52px repeat(7,minmax(110px,1fr));
+  min-width:820px;
+  font-family:'DM Sans',sans-serif;
+}
+.sched-corner{background:transparent}
+.sched-head{
+  font-size:.72rem;text-align:center;padding:8px 4px;color:var(--text3);
+  font-weight:500;border-bottom:1px solid var(--border);
+  position:sticky;top:0;background:var(--card);z-index:2;
+}
+.sched-head .sched-day-num{
+  display:block;font-family:'Lora',serif;font-size:.95rem;color:var(--text);font-weight:600;margin-top:2px;
+}
+.sched-head.today{color:var(--green-dk)}
+.sched-head.today .sched-day-num{color:var(--green-md)}
+.sched-hours{
+  border-right:1px solid var(--border);
+  background:var(--card);
+}
+.sched-hours div{
+  height:48px;font-size:.62rem;color:var(--text3);
+  text-align:right;padding-right:6px;box-sizing:border-box;
+  line-height:48px;
+}
+.sched-col{
+  position:relative;
+  border-left:1px solid var(--border);
+  background:
+    repeating-linear-gradient(180deg,transparent 0,transparent 47px,rgba(160,140,110,0.18) 47px,rgba(160,140,110,0.18) 48px);
+}
 .sched-col.today{background-color:var(--green-mist)}
-.sched-block{position:absolute;left:2px;right:2px;border-radius:6px;padding:3px 5px;font-size:.66rem;overflow:hidden;cursor:pointer;color:#2a1f0e;box-shadow:0 1px 3px rgba(0,0,0,.15);box-sizing:border-box;line-height:1.25}
-.sched-task{border:1.5px dashed var(--green-md);background:rgba(255,255,255,.75)!important;cursor:default}
+.sched-block{
+  position:absolute;left:4px;right:4px;
+  border-radius:6px;padding:3px 6px;
+  font-size:.66rem;overflow:hidden;
+  color:#1a1208;
+  box-shadow:0 1px 3px rgba(0,0,0,.12);
+  box-sizing:border-box;line-height:1.25;
+  display:flex;flex-direction:column;gap:1px;
+  min-height:18px;
+  cursor:pointer;
+}
+.sched-block strong{
+  font-size:.68rem;font-weight:600;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.sched-block .sched-block-time{font-size:.6rem;opacity:.7;white-space:nowrap}
+.sched-block.sched-task{
+  background:rgba(255,255,255,.92) !important;
+  border:1.5px dashed var(--green-md);
+  color:var(--green-dk);
+  cursor:default;
+  padding:2px 5px;
+}
+.sched-block.sched-task strong{color:var(--green-dk);font-weight:600}
+.sched-block.sched-task.done{opacity:.55}
+.sched-block.sched-task.done strong{text-decoration:line-through}
+.sched-empty{
+  padding:1.5rem;text-align:center;color:var(--text3);font-size:.85rem;
+}
+.sched-legend{
+  display:flex;gap:14px;flex-wrap:wrap;align-items:center;
+  font-size:.72rem;color:var(--text3);margin:0.8rem 0 0;
+}
+.sched-legend .dot{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:middle}
+
 
 /* NAV */
 nav {
@@ -2787,6 +2851,7 @@ textarea {
     <button class="btn btn-secondary btn-sm" onclick="navigateTo('agenda')">← Agenda</button>
   </div>
   <div class="sched-wrap"><div class="sched" id="scheduleGrid"></div></div>
+  <div id="scheduleLegend"></div>
 </div>
 
 <!-- AGUA -->
@@ -6492,35 +6557,79 @@ function getPendientes(){
 // HORARIO SEMANAL
 const SCHED_START=6, SCHED_END=24, HOUR_PX=48;
 
+
 function renderSchedule(){
   const el=document.getElementById("scheduleGrid");if(!el)return;
-  const order=[1,2,3,4,5,6,0], names=["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+  const order=[1,2,3,4,5,6,0];               // Lun..Dom
+  const names=["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
   const toMin=s=>{const [h,m]=s.split(":").map(Number);return h*60+m;};
   const H=SCHED_END-SCHED_START, base=SCHED_START*60, endMin=SCHED_END*60;
-  const mon=new Date();mon.setHours(0,0,0,0);mon.setDate(mon.getDate()-((mon.getDay()+6)%7));
+
+  const mon=new Date();mon.setHours(0,0,0,0);
+  mon.setDate(mon.getDate()-((mon.getDay()+6)%7));   // lunes de esta semana
   const dk=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   const todayDow=new Date().getDay();
 
-  let html=`<div></div>`;
-  order.forEach((d,i)=>{const dt=new Date(mon);dt.setDate(mon.getDate()+i);
-    html+=`<div class="sched-head${d===todayDow?" today":""}">${names[d]} ${dt.getDate()}</div>`;});
-  html+=`<div class="sched-hours">`+Array.from({length:H},(_,i)=>`<div>${SCHED_START+i}:00</div>`).join("")+`</div>`;
-
+  // Cabecera
+  let html=`<div class="sched-corner"></div>`;
   order.forEach((d,i)=>{
-    const dt=new Date(mon);dt.setDate(mon.getDate()+i);const key=dk(dt);
-    let col=`<div class="sched-col${d===todayDow?" today":""}" style="height:${H*HOUR_PX}px">`;
-    weeklyBlocks.filter(b=>(b.days||[]).includes(d)).forEach(b=>{
-      const s=Math.max(toMin(b.start),base), e=Math.min(toMin(b.end),endMin);
-      if(e<=s)return;
-      col+=`<div class="sched-block" style="top:${(s-base)/60*HOUR_PX}px;height:${Math.max(20,(e-s)/60*HOUR_PX)}px;background:${b.color}" onclick="openBlockModal('${b.id}')"><strong>${b.name}</strong><br>${b.start}–${b.end}</div>`;
-    });
-    agendaTasks.filter(t=>t.date===key&&t.time&&!t.failed).forEach(t=>{
-      const s=toMin(t.time);if(s<base||s>=endMin)return;
-      col+=`<div class="sched-block sched-task" style="top:${(s-base)/60*HOUR_PX}px;height:22px;${t.done?"opacity:.5;text-decoration:line-through":""}">${t.time} ${t.name}</div>`;
-    });
-    html+=col+`</div>`;
+    const dt=new Date(mon);dt.setDate(mon.getDate()+i);
+    html+=`<div class="sched-head${d===todayDow?" today":""}">${names[d]}<span class="sched-day-num">${dt.getDate()}</span></div>`;
   });
+
+  // Columna de horas
+  html+=`<div class="sched-hours">`+
+    Array.from({length:H},(_,i)=>`<div>${SCHED_START+i}:00</div>`).join("")+
+    `</div>`;
+
+  // 7 columnas
+  order.forEach((d,i)=>{
+    const dt=new Date(mon);dt.setDate(mon.getDate()+i);
+    const key=dk(dt);
+    let col=`<div class="sched-col${d===todayDow?" today":""}" style="height:${H*HOUR_PX}px">`;
+
+    // 1) Bloques fijos (trabajo, clases…)
+    weeklyBlocks.filter(b=>(b.days||[]).includes(d)).forEach(b=>{
+      const s=Math.max(toMin(b.start),base);
+      const e=Math.min(toMin(b.end),endMin);
+      if(e<=s)return;
+      col+=`<div class="sched-block" style="top:${(s-base)/60*HOUR_PX}px;height:${Math.max(22,(e-s)/60*HOUR_PX)}px;background:${b.color}"
+        onclick="openBlockModal('${b.id}')" title="${b.name} · ${b.start}–${b.end}">
+        <strong>${b.name}</strong>
+        <span class="sched-block-time">${b.start}–${b.end}</span>
+      </div>`;
+    });
+
+    // 2) Tareas con hora
+    agendaTasks
+      .filter(t=>t.date===key && t.time && !t.failed)
+      .sort((a,b)=>a.time.localeCompare(b.time))
+      .forEach(t=>{
+        const s=toMin(t.time);
+        if(s<base||s>=endMin)return;
+        col+=`<div class="sched-block sched-task${t.done?" done":""}"
+          style="top:${(s-base)/60*HOUR_PX}px;height:22px;"
+          title="${t.time} · ${t.name}">
+          <strong>${t.time} ${t.name}</strong>
+        </div>`;
+      });
+
+    col+=`</div>`;
+    html+=col;
+  });
+
   el.innerHTML=html;
+
+  // Leyenda (debajo del grid)
+  const legend=document.getElementById("scheduleLegend");
+  if(legend){
+    legend.innerHTML=`
+      <div class="sched-legend">
+        <span><span class="dot" style="background:var(--green-mist);border:1.5px solid var(--green-md)"></span>Día actual</span>
+        <span><span class="dot" style="background:#bbf7d0"></span>Bloque fijo</span>
+        <span><span class="dot" style="background:#fff;border:1.5px dashed var(--green-md)"></span>Tarea con hora</span>
+      </div>`;
+  }
 }
 
 function openBlockModal(id){
