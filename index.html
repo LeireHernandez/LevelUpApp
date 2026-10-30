@@ -58,7 +58,10 @@ body {
   border-radius:var(--radius);
   padding:14px;
   box-shadow:var(--shadow);
+  /* Reserva el alto escalado para que no quede un hueco enorme al hacer zoom out */
+  min-height: calc(52px * 18 * var(--sched-zoom, 1));
 }
+
 .sched{
   display:grid;
   grid-template-columns:56px repeat(7,minmax(120px,1fr));
@@ -66,7 +69,11 @@ body {
   font-family:'DM Sans',sans-serif;
   border-radius:12px;
   overflow:hidden;
+  transform-origin: top left;
+  transform: scale(var(--sched-zoom,1));
+  transition: transform .15s ease;
 }
+
 .sched-corner{ background:transparent; }
 
 /* ---------- Cabecera días ---------- */
@@ -316,9 +323,7 @@ body {
 
 /* ===================== RESPONSIVE MÓVIL ===================== */
 @media(max-width:700px){
-  .sched-wrap{
-    padding:6px;
-  }
+  .sched-wrap{ padding:6px; }
   .sched{
     grid-template-columns:44px repeat(7,minmax(150px,1fr));
     min-width:1150px;
@@ -3101,10 +3106,19 @@ textarea {
   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:1.2rem;align-items:center">
     <button class="btn btn-blue btn-sm" onclick="openBlockModal()">+ Nuevo bloque</button>
     <button class="btn btn-secondary btn-sm" onclick="navigateTo('agenda')">← Agenda</button>
+
+    <!-- Zoom -->
+    <div style="display:flex;gap:4px;align-items:center;background:var(--card2);border:1px solid var(--border2);border-radius:20px;padding:3px 6px">
+      <button class="btn btn-secondary btn-xs" onclick="changeScheduleZoom(-1)" title="Zoom out">−</button>
+      <span id="scheduleZoomLabel" style="font-size:0.72rem;color:var(--text3);min-width:42px;text-align:center">100%</span>
+      <button class="btn btn-secondary btn-xs" onclick="changeScheduleZoom(1)" title="Zoom in">+</button>
+      <button class="btn btn-secondary btn-xs" onclick="changeScheduleZoom(0)" title="Restablecer zoom">⟲</button>
+    </div>
+
     <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
-      <button class="btn btn-secondary btn-xs" onclick="changeScheduleWeek(-1)">← Semana</button>
+      <button class="btn btn-secondary btn-xs" onclick="changeScheduleWeek(-1)">← </button>
       <button class="btn btn-secondary btn-xs" onclick="changeScheduleWeek(0)" id="scheduleTodayBtn">Hoy</button>
-      <button class="btn btn-secondary btn-xs" onclick="changeScheduleWeek(1)">Semana →</button>
+      <button class="btn btn-secondary btn-xs" onclick="changeScheduleWeek(1)"> →</button>
     </div>
   </div>
   <div class="sched-wrap"><div class="sched" id="scheduleGrid"></div></div>
@@ -3895,6 +3909,7 @@ let disabledBuiltinGoals=[];
 let builtinGoalsHomeVisible = {__german:true,__spagatt:true,__books:true};
 let agendaViewDate=null; // null = hoy; si no, un date string YYYY-MM-DD
 let scheduleWeekOffset = 0; // 0 = semana actual, -1 = anterior, +1 = siguiente…
+let scheduleZoom = 1; // 1 = normal, 0.5 = mitad, 1.5 = 150%...
 
 function changeAgendaDay(delta){
   if(delta===0){agendaViewDate=null;}
@@ -6258,6 +6273,25 @@ function toggleProtectorModeFields(){
   }
 }
 
+function changeScheduleZoom(dir){
+  if(dir===0) scheduleZoom=1;
+  else {
+    const steps=[0.5,0.6,0.7,0.8,0.9,1,1.1,1.2,1.3,1.5,1.7,2];
+    const idx=steps.findIndex(z=>Math.abs(z-scheduleZoom)<0.01);
+    const cur=idx<0?5:idx;
+    const next=Math.max(0,Math.min(steps.length-1, cur+dir));
+    scheduleZoom=steps[next];
+  }
+  applyScheduleZoom();
+  renderSchedule();
+}
+function applyScheduleZoom(){
+  const wrap=document.getElementById("scheduleGrid");
+  const lbl=document.getElementById("scheduleZoomLabel");
+  if(wrap) wrap.style.setProperty("--sched-zoom", scheduleZoom);
+  if(lbl) lbl.textContent=Math.round(scheduleZoom*100)+"%";
+}
+
 function renderProtectorTargetOptions(){
   const sel=document.getElementById("protectorTarget");if(!sel)return;
   const needs=getAllNeeds();
@@ -6933,7 +6967,7 @@ function renderSchedule(){
 
     let col=`<div class="sched-col${isToday?" today":""}" style="height:${H*HOUR_PX}px">`;
 
-    // 1) Bloques fijos
+    // 1) Bloques fijos (sin reparto: van a todo el ancho)
     weeklyBlocks.filter(b=>(b.days||[]).includes(d)).forEach(b=>{
       const s=Math.max(toMin(b.start),base);
       const e=Math.min(toMin(b.end),endMin);
@@ -6948,29 +6982,32 @@ function renderSchedule(){
       </div>`;
     });
 
-    // 2) Tareas con hora — preparar intervalos con recorte al rango visible
+    // 2) Tareas con hora — preparar intervalos
+    //    IMPORTANTE: el "e" para el reparto es el que se verá (con mínimo de 18 px),
+    //    así una tarea de 15 min reserva 18px y la siguiente se aparta, no se pisa.
+    const MIN_H_PX = 18;
     const rawTasks = agendaTasks
       .filter(t => t.date===key && t.time && !t.failed)
       .map(t=>{
         const s=toMin(t.time);
-        let e;
-        if(t.endTime){ e=toMin(t.endTime); }
-        else { e=s+15; }          // sin hora fin: 15 min visuales
+        let e = t.endTime ? toMin(t.endTime) : s+15;
         if(e<=s) e=s+15;
         const sC=Math.max(s,base);
         const eC=Math.min(e,endMin);
-        return {t, s:sC, e:eC};
+        const visualEnd = Math.max(eC, sC + Math.ceil((MIN_H_PX/ HOUR_PX)*60) ); // en minutos
+        return {t, s:sC, e:eC, ve: Math.min(visualEnd, endMin)};
       })
       .filter(x=>x.e>x.s);
 
-    // Repartir por columnas los solapes dentro del día
-    const laid = layoutOverlaps(rawTasks);
+    // Repartir por columnas usando el fin VISUAL (para que lo que se ve no se solape)
+    const laid = layoutOverlaps(rawTasks.map(r=>({...r, e:r.ve})));
 
-    laid.forEach(item=>{
+    laid.forEach((item, idx)=>{
+      const orig = rawTasks[idx];
       const {t,s,e,col:colIdx,cols} = item;
       const top=((s-base)/60*HOUR_PX);
-      const rawH=((e-s)/60*HOUR_PX);
-      const h=Math.max(rawH,18);  // mínimo real para que se vea el pill y no se solape con el siguiente
+      const realH=((orig.e-orig.s)/60*HOUR_PX);
+      const h=Math.max(realH, MIN_H_PX);
 
       const gapPx=2;
       const left = `calc(3px + ${colIdx} * ((100% - 6px - ${(cols-1)*gapPx}px) / ${cols}) + ${colIdx*gapPx}px)`;
@@ -6984,8 +7021,8 @@ function renderSchedule(){
       const timeLabel=t.endTime?`${t.time}–${t.endTime}`:t.time;
       const titleStr=`${timeLabel} · ${t.name}${t.category?" · "+t.category:""}${t.wasPostponed?" (pospuesta)":""}${t.recurringId?" (recurrente)":""}`;
 
-      // .tiny si la altura real (sin forzar) es menor que 24 → nombre al lado del pill
-      const tinyClass = rawH < 24 ? " tiny" : "";
+      // .tiny si la altura real es menor que 24px → nombre al lado del pill
+      const tinyClass = realH < 24 ? " tiny" : "";
 
       col+=`<div class="sched-block sched-task${t.done?" done":""}${cols>1?" stack":""}${tinyClass}"
         style="top:${top}px;height:${h}px;left:${left};width:${width};right:auto;"
@@ -7007,7 +7044,7 @@ function renderSchedule(){
 
   el.innerHTML=html;
 
-  // ---------- Ancho mínimo dinámico según solapes (para móvil) ----------
+  // ---------- Ancho mínimo dinámico según solapes + zoom ----------
   const maxColsToday = Math.max(1, ...Array.from(el.querySelectorAll(".sched-col")).map(c=>{
     const blocks=c.querySelectorAll(".sched-block.sched-task");
     let maxCols=1;
@@ -7019,6 +7056,9 @@ function renderSchedule(){
   }));
   const baseColWidth = window.innerWidth<700 ? 150 : 110;
   el.style.minWidth = (56 + 7*(baseColWidth * maxColsToday)) + "px";
+
+  // Aplicar zoom actual
+  applyScheduleZoom();
 
   // ---------- Leyenda ----------
   const legend=document.getElementById("scheduleLegend");
@@ -7034,7 +7074,7 @@ function renderSchedule(){
 
   // ---------- En móvil: aterrizar en la columna de hoy ----------
   const wrap=el.parentElement;
-  if(wrap && window.innerWidth<700){
+  if(wrap && window.innerWidth<700 && scheduleWeekOffset===0){
     const todayCol=wrap.querySelector(".sched-col.today");
     if(todayCol){
       wrap.scrollLeft=Math.max(0, todayCol.offsetLeft-50);
@@ -7043,7 +7083,7 @@ function renderSchedule(){
     }
   }
 
-  // ---------- Actualizar línea "ahora" cada minuto sin re-renderizar ----------
+  // ---------- Actualizar línea "ahora" cada minuto ----------
   if(_schedNowTimer) clearInterval(_schedNowTimer);
   _schedNowTimer=setInterval(()=>{
     if(scheduleWeekOffset!==0) return;
