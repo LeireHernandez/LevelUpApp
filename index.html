@@ -52,14 +52,15 @@ body {
 
 /* ---------- Contenedor del horario ---------- */
 .sched-wrap{
-  overflow-x:auto;
+  overflow:auto;
   background:var(--card);
   border:1px solid var(--border);
   border-radius:var(--radius);
   padding:14px;
   box-shadow:var(--shadow);
-  /* Reserva el alto escalado para que no quede un hueco enorme al hacer zoom out */
-  min-height: calc(52px * 18 * var(--sched-zoom, 1));
+  max-height:70vh;
+  min-height: calc(52px * 18 * var(--sched-zoom, 1) + 28px);
+  display:flex; justify-content:center; align-items:flex-start; 
 }
 
 .sched{
@@ -3113,6 +3114,7 @@ textarea {
       <span id="scheduleZoomLabel" style="font-size:0.72rem;color:var(--text3);min-width:42px;text-align:center">100%</span>
       <button class="btn btn-secondary btn-xs" onclick="changeScheduleZoom(1)" title="Zoom in">+</button>
       <button class="btn btn-secondary btn-xs" onclick="changeScheduleZoom(0)" title="Restablecer zoom">⟲</button>
+      <button class="btn btn-secondary btn-xs" onclick="scheduleZoom=0.4;applyScheduleZoom();renderSchedule();" title="Ver semana completa">Ver todo</button>
     </div>
 
     <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
@@ -6276,15 +6278,16 @@ function toggleProtectorModeFields(){
 function changeScheduleZoom(dir){
   if(dir===0) scheduleZoom=1;
   else {
-    const steps=[0.5,0.6,0.7,0.8,0.9,1,1.1,1.2,1.3,1.5,1.7,2];
+    const steps=[0.25,0.3,0.35,0.4,0.5,0.6,0.7,0.8,0.9,1,1.1,1.2,1.3,1.5,1.7,2];
     const idx=steps.findIndex(z=>Math.abs(z-scheduleZoom)<0.01);
-    const cur=idx<0?5:idx;
+    const cur=idx<0?9:idx;
     const next=Math.max(0,Math.min(steps.length-1, cur+dir));
     scheduleZoom=steps[next];
   }
   applyScheduleZoom();
   renderSchedule();
 }
+
 function applyScheduleZoom(){
   const wrap=document.getElementById("scheduleGrid");
   const lbl=document.getElementById("scheduleZoomLabel");
@@ -7054,8 +7057,10 @@ function renderSchedule(){
     });
     return maxCols;
   }));
-  const baseColWidth = window.innerWidth<700 ? 150 : 110;
-  el.style.minWidth = (56 + 7*(baseColWidth * maxColsToday)) + "px";
+
+    const baseColWidth = window.innerWidth<700 ? 150 : 110;
+  const zoomFactor = Math.max(0.5, scheduleZoom); // el zoom no reduce el min-width (ya lo hace transform)
+  el.style.minWidth = (56 + 7*(baseColWidth * maxColsToday * zoomFactor)) + "px";
 
   // Aplicar zoom actual
   applyScheduleZoom();
