@@ -45,9 +45,18 @@ body {
 
 
 
+
+/* ============================================================
+   BLOQUES DEL HORARIO  (fijos + tareas)
+   ============================================================ */
+
+/* ---------- Contenedor del horario ---------- */
 .sched-wrap{
-  overflow-x:auto;background:var(--card);border:1px solid var(--border);
-  border-radius:var(--radius);padding:14px;
+  overflow-x:auto;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:14px;
   box-shadow:var(--shadow);
 }
 .sched{
@@ -58,42 +67,66 @@ body {
   border-radius:12px;
   overflow:hidden;
 }
-.sched-corner{background:transparent}
+.sched-corner{ background:transparent; }
 
-/* Cabecera días */
+/* ---------- Cabecera días ---------- */
 .sched-head{
-  padding:10px 6px 9px;text-align:center;
-  color:var(--text3);font-size:.68rem;font-weight:600;
-  letter-spacing:.06em;text-transform:uppercase;
-  background:var(--card);border-bottom:1px solid var(--border);
-  position:sticky;top:0;z-index:3;
+  padding:10px 6px 9px;
+  text-align:center;
+  color:var(--text3);
+  font-size:.68rem;
+  font-weight:600;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  background:var(--card);
+  border-bottom:1px solid var(--border);
+  position:sticky;
+  top:0;
+  z-index:3;
 }
 .sched-head .sched-day-num{
-  display:block;font-family:'Lora',serif;font-size:1.15rem;
-  color:var(--text);font-weight:600;margin-top:3px;letter-spacing:0;
+  display:block;
+  font-family:'Lora',serif;
+  font-size:1.15rem;
+  color:var(--text);
+  font-weight:600;
+  margin-top:3px;
+  letter-spacing:0;
 }
 .sched-head.today{
   color:var(--green-dk);
   background:linear-gradient(180deg,var(--green-mist),var(--card));
 }
 .sched-head.today .sched-day-num{
-  color:#fff;background:var(--green-md);
-  display:inline-block;min-width:32px;padding:1px 6px;border-radius:20px;
+  color:#fff;
+  background:var(--green-md);
+  display:inline-block;
+  min-width:32px;
+  padding:1px 6px;
+  border-radius:20px;
 }
 
-/* Columna horas */
-.sched-hours{background:var(--card);border-right:1px solid var(--border)}
+/* ---------- Columna de horas ---------- */
+.sched-hours{
+  background:var(--card);
+  border-right:1px solid var(--border);
+}
 .sched-hours div{
-  height:52px;font-size:.63rem;color:var(--text3);
-  text-align:right;padding-right:8px;box-sizing:border-box;
-  line-height:52px;font-weight:500;
+  height:52px;
+  font-size:.63rem;
+  color:var(--text3);
+  text-align:right;
+  padding-right:8px;
+  box-sizing:border-box;
+  line-height:52px;
+  font-weight:500;
 }
 
-/* Columnas días */
+/* ---------- Columnas de día ---------- */
 .sched-col{
   position:relative;
   border-left:1px solid var(--border);
-  padding-bottom:18px;
+  padding-bottom:18px;      /* colchón para que 23:00 no se corte */
   box-sizing:content-box;
   background:
     repeating-linear-gradient(180deg,
@@ -111,17 +144,28 @@ body {
       rgba(160,180,140,0.55) 51px, rgba(160,180,140,0.55) 52px);
 }
 
-/* Bloques fijos */
+/* ---------- Bloque base (fijos: trabajo, clases, etc.) ---------- */
 .sched-block{
-  position:absolute;left:3px;right:3px;
-  border-radius:7px;padding:4px 7px;
-  font-size:.68rem;overflow:hidden;
+  position:absolute;
+  left:3px;
+  right:3px;
+  border-radius:7px;
+  padding:3px 7px;
+  font-size:.68rem;
+  overflow:hidden;
   color:#1a1208;
+  background:#dbeafe;
   box-shadow:0 1px 3px rgba(0,0,0,.15), inset 0 0 0 1px rgba(255,255,255,.35);
-  box-sizing:border-box;line-height:1.25;
-  display:flex;flex-direction:column;gap:1px;
-  cursor:pointer;transition:transform .12s, box-shadow .12s;
+  box-sizing:border-box;
+  line-height:1.2;
+  display:flex;
+  flex-direction:column;
+  gap:1px;
+  cursor:pointer;
+  transition:transform .12s, box-shadow .12s;
   border-left:3px solid rgba(0,0,0,.18);
+  min-height:18px;
+  z-index:1;
 }
 .sched-block:hover{
   transform:translateY(-1px);
@@ -129,64 +173,183 @@ body {
   z-index:5;
 }
 .sched-block strong{
-  font-size:.72rem;font-weight:600;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  font-size:.72rem;
+  font-weight:600;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 .sched-block .sched-block-time{
-  font-size:.6rem;opacity:.72;white-space:nowrap;font-weight:500;
+  font-size:.6rem;
+  opacity:.72;
+  white-space:nowrap;
+  font-weight:500;
 }
 
+/* ---------- Tarea con hora ---------- */
 .sched-block.sched-task{
   background:linear-gradient(180deg,#ffffff,#f6fbf0) !important;
   border:1.5px dashed var(--green-md);
   border-left:3px solid var(--green-md);
   color:var(--green-dk);
   cursor:pointer;
-  padding:4px 7px;
-  display:flex;flex-direction:column;gap:2px;
-  align-items:flex-start;justify-content:flex-start;
+  padding:2px 5px;
+  display:flex;
+  flex-direction:column;
+  gap:1px;
+  align-items:flex-start;
+  justify-content:flex-start;
   overflow:hidden;
   box-sizing:border-box;
+  line-height:1.15;
+  /* SIN min-height: la altura la controla renderSchedule() */
+  z-index:2;
+}
+
+/* Pill de la hora */
+.sched-block.sched-task .task-time-pill{
+  font-size:.56rem;
+  font-weight:700;
+  color:#fff;
+  background:var(--green-md);
+  padding:0 6px;
+  border-radius:20px;
+  flex-shrink:0;
+  white-space:nowrap;
+  line-height:1.4;
+}
+
+/* Nombre de la tarea */
+.sched-block.sched-task .task-name{
+  font-size:.66rem;
+  font-weight:600;
+  color:var(--green-dk);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  width:100%;
   line-height:1.2;
 }
-.sched-block.sched-task .task-time-pill{
-  font-size:.6rem;font-weight:700;color:#fff;
-  background:var(--green-md);
-  padding:1px 7px;border-radius:20px;flex-shrink:0;
-  white-space:nowrap;
+
+/* ---------- Tarea corta: nombre al lado del pill ---------- */
+.sched-block.sched-task.tiny{
+  flex-direction:row;
+  align-items:center;
+  gap:5px;
+  padding:0 5px;
 }
-.sched-block.sched-task .task-name{
-  font-size:.7rem;font-weight:600;
-  color:var(--green-dk);
-  white-space:normal;
-  word-break:break-word;
-  line-height:1.25;
+.sched-block.sched-task.tiny .task-name{
+  width:auto;
+  flex:1;
+  min-width:0;
+  white-space:nowrap;
   overflow:hidden;
-  display:-webkit-box;
-  -webkit-line-clamp:2;
-  -webkit-box-orient:vertical;
-  width:100%;
+  text-overflow:ellipsis;
+  font-size:.62rem;
 }
 
-/* Línea "ahora" */
+/* ---------- Tarea completada ---------- */
+.sched-block.sched-task.done{
+  opacity:.55;
+  background:#f2f2f2 !important;
+}
+.sched-block.sched-task.done .task-name{
+  text-decoration:line-through;
+  color:var(--text3);
+}
+.sched-block.sched-task.done .task-time-pill{
+  background:var(--text3);
+}
+
+/* ---------- Tareas solapadas ---------- */
+.sched-block.sched-task.stack{
+  /* left/width vienen inline desde renderSchedule(); sin regla extra */
+}
+
+/* ---------- Línea "ahora" ---------- */
 .sched-now-line{
-  position:absolute;left:0;right:0;height:2px;
-  background:var(--red);z-index:4;pointer-events:none;
+  position:absolute;
+  left:0;
+  right:0;
+  height:2px;
+  background:var(--red);
+  z-index:4;
+  pointer-events:none;
 }
 .sched-now-line::before{
-  content:'';position:absolute;left:-4px;top:-3px;
-  width:8px;height:8px;border-radius:50%;background:var(--red);
+  content:'';
+  position:absolute;
+  left:-4px;
+  top:-3px;
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:var(--red);
 }
 
-/* Leyenda */
+/* ---------- Leyenda ---------- */
 .sched-legend{
-  display:flex;gap:18px;flex-wrap:wrap;align-items:center;
-  font-size:.72rem;color:var(--text3);margin:0.9rem 0 0;
+  display:flex;
+  gap:18px;
+  flex-wrap:wrap;
+  align-items:center;
+  font-size:.72rem;
+  color:var(--text3);
+  margin:0.9rem 0 0;
 }
 .sched-legend .dot{
-  display:inline-block;width:13px;height:13px;border-radius:4px;
-  margin-right:6px;vertical-align:middle;
+  display:inline-block;
+  width:13px;
+  height:13px;
+  border-radius:4px;
+  margin-right:6px;
+  vertical-align:middle;
 }
+
+/* ---------- Estado vacío (opcional) ---------- */
+.sched-empty{
+  padding:1.5rem;
+  text-align:center;
+  color:var(--text3);
+  font-size:.85rem;
+}
+
+/* ===================== RESPONSIVE MÓVIL ===================== */
+@media(max-width:700px){
+  .sched-wrap{
+    padding:6px;
+  }
+  .sched{
+    grid-template-columns:44px repeat(7,minmax(150px,1fr));
+    min-width:1150px;
+  }
+  .sched-head{
+    font-size:.62rem;
+    padding:6px 4px 5px;
+  }
+  .sched-head .sched-day-num{
+    font-size:1rem;
+    min-width:26px;
+    padding:1px 5px;
+  }
+  .sched-hours div{
+    height:52px;
+    line-height:52px;
+    font-size:.58rem;
+    padding-right:5px;
+  }
+  .sched-block{
+    font-size:.68rem;
+  }
+  .sched-block.sched-task .task-name{
+    font-size:.68rem;
+  }
+  .sched-block.sched-task .task-time-pill{
+    font-size:.58rem;
+  }
+}
+
+
 
 
 
@@ -6678,8 +6841,53 @@ function getScheduleMonday(){
   return mon;
 }
 
+
+
+function changeScheduleWeek(offset){
+  if(offset===0) scheduleWeekOffset=0;
+  else scheduleWeekOffset+=offset;
+  renderSchedule();
+}
+
+function getScheduleMonday(){
+  const mon=new Date();
+  mon.setHours(0,0,0,0);
+  mon.setDate(mon.getDate()-((mon.getDay()+6)%7)+scheduleWeekOffset*7);
+  return mon;
+}
+
+// Recibe [{s,e,...}] y devuelve los mismos con {col, cols} asignados
+function layoutOverlaps(items){
+  const sorted = items.slice().sort((a,b)=> a.s-b.s || a.e-b.e);
+  const columns = []; // cada columna guarda el fin del último bloque colocado
+  const result = [];
+
+  sorted.forEach(it=>{
+    let placed=false;
+    for(let c=0;c<columns.length;c++){
+      if(columns[c]<=it.s){
+        columns[c]=it.e;
+        it.col=c;
+        placed=true;
+        break;
+      }
+    }
+    if(!placed){
+      it.col=columns.length;
+      columns.push(it.e);
+    }
+    result.push(it);
+  });
+
+  const cols = Math.max(1, columns.length);
+  result.forEach(r=>r.cols=cols);
+  return result;
+}
+
 function renderSchedule(){
-  const el=document.getElementById("scheduleGrid");if(!el)return;
+  const el=document.getElementById("scheduleGrid");
+  if(!el) return;
+
   const order=[1,2,3,4,5,6,0];               // Lun..Dom
   const names=["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
   const toMin=s=>{const [h,m]=s.split(":").map(Number);return h*60+m;};
@@ -6695,14 +6903,14 @@ function renderSchedule(){
     sub.textContent=`Semana del ${f(mon)} al ${f(sun)} · ${agendaTasks.filter(t=>t.time&&!t.failed).length} tareas con hora en total`;
   }
   const todayBtn=document.getElementById("scheduleTodayBtn");
-  if(todayBtn)todayBtn.style.display=scheduleWeekOffset===0?"none":"";
+  if(todayBtn) todayBtn.style.display = scheduleWeekOffset===0 ? "none" : "";
 
   const dk=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   const todayDow=new Date().getDay();
   const now=new Date();
   const nowMin=now.getHours()*60+now.getMinutes();
 
-  // Cabecera
+  // ---------- Cabecera ----------
   let html=`<div class="sched-corner"></div>`;
   order.forEach((d,i)=>{
     const dt=new Date(mon);dt.setDate(mon.getDate()+i);
@@ -6712,29 +6920,16 @@ function renderSchedule(){
     </div>`;
   });
 
-  // Columna de horas
+  // ---------- Columna de horas ----------
   html+=`<div class="sched-hours">`+
     Array.from({length:H},(_,i)=>`<div>${SCHED_START+i}:00</div>`).join("")+
     `</div>`;
 
-  // 7 columnas
+  // ---------- 7 columnas de día ----------
   order.forEach((d,i)=>{
     const dt=new Date(mon);dt.setDate(mon.getDate()+i);
     const key=dk(dt);
     const isToday=scheduleWeekOffset===0 && d===todayDow;
-
-    // Tareas con hora de ESE día:
-    //  - normales (sin recurringId)
-    //  - recurrentes (con recurringId) → ya están en agendaTasks
-    //  - pospuestas (wasPostponed) → también están en agendaTasks con la nueva date
-    // Se incluyen completadas (se ven atenuadas) y se excluyen las fallidas.
-    const dayTasks = agendaTasks
-      .filter(t => t.date===key && t.time && !t.failed)
-      .sort((a,b)=>{
-        // Primero las no completadas, luego por hora
-        if(!!a.done!==!!b.done) return a.done?1:-1;
-        return a.time.localeCompare(b.time);
-      });
 
     let col=`<div class="sched-col${isToday?" today":""}" style="height:${H*HOUR_PX}px">`;
 
@@ -6743,35 +6938,58 @@ function renderSchedule(){
       const s=Math.max(toMin(b.start),base);
       const e=Math.min(toMin(b.end),endMin);
       if(e<=s)return;
+      const top=((s-base)/60*HOUR_PX);
+      const h=((e-s)/60*HOUR_PX);
       col+=`<div class="sched-block"
-        style="top:${(s-base)/60*HOUR_PX}px;height:${Math.max(34, Math.min((e-s)/60*HOUR_PX, (endMin-base)/60*HOUR_PX - (s-base)/60*HOUR_PX))}px;background:${b.color}"
+        style="top:${top}px;height:${h}px;left:3px;right:3px;background:${b.color}"
         onclick="openBlockModal('${b.id}')" title="${b.name} · ${b.start}–${b.end}">
         <strong>${b.name}</strong>
         <span class="sched-block-time">${b.start}–${b.end}</span>
       </div>`;
     });
 
-    // 2) Tareas con hora
-        dayTasks.forEach(t=>{
-      const s=toMin(t.time);
-      if(s<base||s>=endMin)return;
-      let e=endMin;
-      if(t.endTime){
-        const eMin=toMin(t.endTime);
-        e=Math.min(eMin,endMin);
-      }else{
-        e=Math.min(s+30,endMin); // 30 min por defecto si no hay hora fin
-      }
-      if(e<=s)e=s+15; // mínimo visible
+    // 2) Tareas con hora — preparar intervalos con recorte al rango visible
+    const rawTasks = agendaTasks
+      .filter(t => t.date===key && t.time && !t.failed)
+      .map(t=>{
+        const s=toMin(t.time);
+        let e;
+        if(t.endTime){ e=toMin(t.endTime); }
+        else { e=s+15; }          // sin hora fin: 15 min visuales
+        if(e<=s) e=s+15;
+        const sC=Math.max(s,base);
+        const eC=Math.min(e,endMin);
+        return {t, s:sC, e:eC};
+      })
+      .filter(x=>x.e>x.s);
+
+    // Repartir por columnas los solapes dentro del día
+    const laid = layoutOverlaps(rawTasks);
+
+    laid.forEach(item=>{
+      const {t,s,e,col:colIdx,cols} = item;
+      const top=((s-base)/60*HOUR_PX);
+      const rawH=((e-s)/60*HOUR_PX);
+      const h=Math.max(rawH,18);  // mínimo real para que se vea el pill y no se solape con el siguiente
+
+      const gapPx=2;
+      const left = `calc(3px + ${colIdx} * ((100% - 6px - ${(cols-1)*gapPx}px) / ${cols}) + ${colIdx*gapPx}px)`;
+      const width = `calc((100% - 6px - ${(cols-1)*gapPx}px) / ${cols})`;
+
       const tags=[];
       if(t.recurringId) tags.push("🔁");
       if(t.wasPostponed) tags.push("📆");
       if(t.done) tags.push("✓");
       const tagStr=tags.join(" ");
       const timeLabel=t.endTime?`${t.time}–${t.endTime}`:t.time;
-      col+=`<div class="sched-block sched-task${t.done?" done":""}"
-        style="top:${(s-base)/60*HOUR_PX}px;height:${Math.max(34, Math.min((e-s)/60*HOUR_PX, (endMin-base)/60*HOUR_PX - (s-base)/60*HOUR_PX))}px;"
-        title="${timeLabel} · ${t.name}${t.category?" · "+t.category:""}${t.wasPostponed?" (pospuesta)":""}${t.recurringId?" (recurrente)":""}"
+      const titleStr=`${timeLabel} · ${t.name}${t.category?" · "+t.category:""}${t.wasPostponed?" (pospuesta)":""}${t.recurringId?" (recurrente)":""}`;
+
+      // .tiny si la altura real (sin forzar) es menor que 24 → nombre al lado del pill
+      const tinyClass = rawH < 24 ? " tiny" : "";
+
+      col+=`<div class="sched-block sched-task${t.done?" done":""}${cols>1?" stack":""}${tinyClass}"
+        style="top:${top}px;height:${h}px;left:${left};width:${width};right:auto;"
+        title="${titleStr}"
         onclick="openTaskMenu('${t.id}',this)">
         <span class="task-time-pill">${timeLabel}</span>
         <span class="task-name">${t.name}${tagStr?" "+tagStr:""}</span>
@@ -6789,7 +7007,20 @@ function renderSchedule(){
 
   el.innerHTML=html;
 
-  // Leyenda
+  // ---------- Ancho mínimo dinámico según solapes (para móvil) ----------
+  const maxColsToday = Math.max(1, ...Array.from(el.querySelectorAll(".sched-col")).map(c=>{
+    const blocks=c.querySelectorAll(".sched-block.sched-task");
+    let maxCols=1;
+    blocks.forEach(b=>{
+      const m=b.style.width.match(/\/\s*(\d+)/);
+      if(m) maxCols=Math.max(maxCols, parseInt(m[1]));
+    });
+    return maxCols;
+  }));
+  const baseColWidth = window.innerWidth<700 ? 150 : 110;
+  el.style.minWidth = (56 + 7*(baseColWidth * maxColsToday)) + "px";
+
+  // ---------- Leyenda ----------
   const legend=document.getElementById("scheduleLegend");
   if(legend){
     legend.innerHTML=`
@@ -6801,10 +7032,20 @@ function renderSchedule(){
       </div>`;
   }
 
-  // Mover la línea "ahora" cada minuto sin re-renderizar todo
+  // ---------- En móvil: aterrizar en la columna de hoy ----------
+  const wrap=el.parentElement;
+  if(wrap && window.innerWidth<700){
+    const todayCol=wrap.querySelector(".sched-col.today");
+    if(todayCol){
+      wrap.scrollLeft=Math.max(0, todayCol.offsetLeft-50);
+    }else{
+      wrap.scrollLeft=0;
+    }
+  }
+
+  // ---------- Actualizar línea "ahora" cada minuto sin re-renderizar ----------
   if(_schedNowTimer) clearInterval(_schedNowTimer);
   _schedNowTimer=setInterval(()=>{
-    // Solo actualiza si seguimos en la semana actual
     if(scheduleWeekOffset!==0) return;
     const lineEl=document.querySelector(".sched-now-line");
     if(!lineEl) return;
@@ -7459,6 +7700,37 @@ if(ebl){
 
   }
 
+}
+
+// Recibe una lista de intervalos {s, e, ...} y devuelve los mismos items
+// con {col, cols} asignados para repartir el ancho dentro del día.
+function layoutOverlaps(items){
+  // Ordenados por inicio, luego por fin
+  const sorted = items.slice().sort((a,b)=> a.s-b.s || a.e-b.e);
+  const columns = []; // cada columna guarda el fin del último bloque colocado
+  const result = [];
+
+  sorted.forEach(it=>{
+    let placed=false;
+    for(let c=0;c<columns.length;c++){
+      if(columns[c]<=it.s){
+        columns[c]=it.e;
+        it.col=c;
+        placed=true;
+        break;
+      }
+    }
+    if(!placed){
+      it.col=columns.length;
+      columns.push(it.e);
+    }
+    result.push(it);
+  });
+
+  // Número total de columnas usadas
+  const cols = Math.max(1, columns.length);
+  result.forEach(r=>r.cols=cols);
+  return result;
 }
 
 function toggleCoreObligatory(key){
