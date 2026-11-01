@@ -47,39 +47,47 @@ body {
 
 
 /* ============================================================
-   BLOQUES DEL HORARIO  (fijos + tareas)
+   BLOQUES DEL HORARIO  (fijos + tareas) — Estilo Google Calendar
    ============================================================ */
 
-/* ---------- Contenedor del horario ---------- */
+:root{
+  --sched-hour-h: 56px;   /* altura de cada hora (escala con zoom) */
+  --sched-col-min: 130px;
+}
+
 .sched-wrap{
   overflow:auto;
   background:var(--card);
   border:1px solid var(--border);
   border-radius:var(--radius);
-  padding:14px;
+  padding:0;
   box-shadow:var(--shadow);
-  max-height:70vh;
-  min-height: calc(52px * 18 * var(--sched-zoom, 1) + 28px);
-  display:flex; justify-content:center; align-items:flex-start; 
+  max-height:75vh;
+  -webkit-overflow-scrolling:touch;
 }
 
 .sched{
   display:grid;
-  grid-template-columns:56px repeat(7,minmax(120px,1fr));
-  min-width:900px;
+  grid-template-columns: 60px repeat(7, minmax(var(--sched-col-min), 1fr));
+  min-width: max-content;
   font-family:'DM Sans',sans-serif;
   border-radius:12px;
-  overflow:hidden;
-  transform-origin: top left;
-  transform: scale(var(--sched-zoom,1));
-  transition: transform .15s ease;
+  overflow:visible;
+  --sched-zoom: 1;
 }
 
-.sched-corner{ background:transparent; }
+.sched-corner{
+  background:var(--card);
+  border-right:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+  position:sticky; top:0; left:0; z-index:6;
+  height:64px;
+}
 
-/* ---------- Cabecera días ---------- */
+/* Cabecera de días */
 .sched-head{
-  padding:10px 6px 9px;
+  height:64px;
+  padding:8px 6px 6px;
   text-align:center;
   color:var(--text3);
   font-size:.68rem;
@@ -88,273 +96,202 @@ body {
   text-transform:uppercase;
   background:var(--card);
   border-bottom:1px solid var(--border);
-  position:sticky;
-  top:0;
-  z-index:3;
+  border-left:1px solid var(--border);
+  position:sticky; top:0; z-index:4;
+  box-sizing:border-box;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
 }
+.sched-head .sched-day-name{ font-size:.66rem; }
 .sched-head .sched-day-num{
-  display:block;
+  display:inline-block;
   font-family:'Lora',serif;
-  font-size:1.15rem;
+  font-size:1.05rem;
   color:var(--text);
   font-weight:600;
-  margin-top:3px;
-  letter-spacing:0;
-}
-.sched-head.today{
-  color:var(--green-dk);
-  background:linear-gradient(180deg,var(--green-mist),var(--card));
-}
-.sched-head.today .sched-day-num{
-  color:#fff;
-  background:var(--green-md);
-  display:inline-block;
-  min-width:32px;
-  padding:1px 6px;
+  padding:1px 8px;
   border-radius:20px;
+  min-width:28px;
 }
+.sched-head.today{ color:var(--green-dk); background:var(--green-mist); }
+.sched-head.today .sched-day-num{ color:#fff; background:var(--green-md); }
 
-/* ---------- Columna de horas ---------- */
+/* Columna de horas */
 .sched-hours{
   background:var(--card);
   border-right:1px solid var(--border);
+  position:sticky; left:0; z-index:5;
 }
 .sched-hours div{
-  height:52px;
-  font-size:.63rem;
+  height: var(--sched-hour-h);
+  font-size:.66rem;
   color:var(--text3);
   text-align:right;
-  padding-right:8px;
+  padding:0 8px 0 0;
   box-sizing:border-box;
-  line-height:52px;
+  line-height: var(--sched-hour-h);
   font-weight:500;
+  border-top:1px solid var(--border);
 }
+.sched-hours div:first-child{ border-top:none; }
 
-/* ---------- Columnas de día ---------- */
+/* Columna de día */
 .sched-col{
   position:relative;
   border-left:1px solid var(--border);
-  padding-bottom:18px;      /* colchón para que 23:00 no se corte */
-  box-sizing:content-box;
-  background:
+  height: calc(var(--sched-hour-h) * 24);
+  box-sizing:border-box;
+  background:var(--card);
+  background-image:
     repeating-linear-gradient(180deg,
-      transparent 0, transparent 25px,
-      rgba(160,140,110,0.10) 25px, rgba(160,140,110,0.10) 26px,
-      transparent 26px, transparent 51px,
-      rgba(160,140,110,0.22) 51px, rgba(160,140,110,0.22) 52px);
+      transparent 0,
+      transparent calc(var(--sched-hour-h) - 1px),
+      var(--border) calc(var(--sched-hour-h) - 1px),
+      var(--border) var(--sched-hour-h));
 }
-.sched-col.today{
-  background:
-    repeating-linear-gradient(180deg,
-      rgba(230,240,220,0.55) 0, rgba(230,240,220,0.55) 25px,
-      rgba(160,180,140,0.35) 25px, rgba(160,180,140,0.35) 26px,
-      rgba(230,240,220,0.55) 26px, rgba(230,240,220,0.55) 51px,
-      rgba(160,180,140,0.55) 51px, rgba(160,180,140,0.55) 52px);
-}
+.sched-col.today{ background-color:#f6faf1; }
 
-/* ---------- Bloque base (fijos: trabajo, clases, etc.) ---------- */
+/* Bloques fijos y tareas */
 .sched-block{
   position:absolute;
-  left:3px;
-  right:3px;
-  border-radius:7px;
-  padding:3px 7px;
-  font-size:.68rem;
+  border-radius:6px;
+  padding:2px 6px;
+  font-size:.72rem;
   overflow:hidden;
   color:#1a1208;
-  background:#dbeafe;
-  box-shadow:0 1px 3px rgba(0,0,0,.15), inset 0 0 0 1px rgba(255,255,255,.35);
-  box-sizing:border-box;
-  line-height:1.2;
-  display:flex;
-  flex-direction:column;
-  gap:1px;
-  cursor:pointer;
-  transition:transform .12s, box-shadow .12s;
-  border-left:3px solid rgba(0,0,0,.18);
-  min-height:18px;
-  z-index:1;
-}
-.sched-block:hover{
-  transform:translateY(-1px);
-  box-shadow:0 4px 10px rgba(0,0,0,.22);
-  z-index:5;
-}
-.sched-block strong{
-  font-size:.72rem;
-  font-weight:600;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-.sched-block .sched-block-time{
-  font-size:.6rem;
-  opacity:.72;
-  white-space:nowrap;
-  font-weight:500;
-}
-
-/* ---------- Tarea con hora ---------- */
-.sched-block.sched-task{
-  background:linear-gradient(180deg,#ffffff,#f6fbf0) !important;
-  border:1.5px dashed var(--green-md);
-  border-left:3px solid var(--green-md);
-  color:var(--green-dk);
-  cursor:pointer;
-  padding:2px 5px;
-  display:flex;
-  flex-direction:column;
-  gap:1px;
-  align-items:flex-start;
-  justify-content:flex-start;
-  overflow:hidden;
   box-sizing:border-box;
   line-height:1.15;
-  /* SIN min-height: la altura la controla renderSchedule() */
+  display:flex;
+  flex-direction:column;
+  gap:1px;
+  cursor:pointer;
+  transition:box-shadow .12s, filter .12s;
+  min-height:16px;
   z-index:2;
+  border-left:3px solid rgba(0,0,0,.25);
+  box-shadow:0 1px 2px rgba(0,0,0,.12);
+}
+.sched-block:hover{ z-index:9; filter:brightness(1.03); box-shadow:0 4px 12px rgba(0,0,0,.22); }
+
+.sched-block strong{
+  font-size:.74rem;
+  font-weight:600;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  display:block;
+}
+.sched-block .sched-block-time{
+  font-size:.63rem;
+  opacity:.75;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  font-weight:500;
+  display:block;
 }
 
-/* Pill de la hora */
+/* Tarea con hora */
+.sched-block.sched-task{
+  background:#ffffff !important;
+  border:1.5px solid var(--green-md);
+  border-left:3px solid var(--green-md);
+  color:var(--green-dk);
+  z-index:3;
+}
 .sched-block.sched-task .task-time-pill{
-  font-size:.56rem;
+  font-size:.6rem;
   font-weight:700;
   color:#fff;
   background:var(--green-md);
   padding:0 6px;
-  border-radius:20px;
-  flex-shrink:0;
+  border-radius:10px;
+  display:inline-block;
   white-space:nowrap;
-  line-height:1.4;
+  line-height:1.35;
+  max-width:100%;
+  overflow:hidden; text-overflow:ellipsis;
 }
-
-/* Nombre de la tarea */
 .sched-block.sched-task .task-name{
-  font-size:.66rem;
+  font-size:.7rem;
   font-weight:600;
   color:var(--green-dk);
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   width:100%;
-  line-height:1.2;
+}
+.sched-block.sched-task .task-details{
+  font-size:.6rem;
+  color:var(--text3);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
 
-/* ---------- Tarea corta: nombre al lado del pill ---------- */
+/* Tarea muy corta (<24px): en horizontal */
 .sched-block.sched-task.tiny{
-  flex-direction:row;
-  align-items:center;
-  gap:5px;
+  flex-direction:row; align-items:center; gap:5px;
   padding:0 5px;
 }
 .sched-block.sched-task.tiny .task-name{
-  width:auto;
-  flex:1;
-  min-width:0;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  font-size:.62rem;
+  width:auto; flex:1; min-width:0;
+  font-size:.66rem;
 }
+.sched-block.sched-task.tiny .task-details{ display:none; }
 
-/* ---------- Tarea completada ---------- */
-.sched-block.sched-task.done{
-  opacity:.55;
-  background:#f2f2f2 !important;
-}
-.sched-block.sched-task.done .task-name{
-  text-decoration:line-through;
-  color:var(--text3);
-}
-.sched-block.sched-task.done .task-time-pill{
-  background:var(--text3);
-}
+/* Completada / fallida */
+.sched-block.sched-task.done{ opacity:.55; background:#f2f2f2 !important; border-color:#bbb; border-left-color:#bbb; }
+.sched-block.sched-task.done .task-name{ text-decoration:line-through; color:var(--text3); }
+.sched-block.sched-task.done .task-time-pill{ background:var(--text3); }
+.sched-block.sched-task.failed-block{ background:var(--red-lt)!important; border-color:var(--red); border-left-color:var(--red); }
+.sched-block.sched-task.failed-block .task-name{ color:var(--red); text-decoration:line-through; }
+.sched-block.sched-task.failed-block .task-time-pill{ background:var(--red); }
 
-/* ---------- Tareas solapadas ---------- */
-.sched-block.sched-task.stack{
-  /* left/width vienen inline desde renderSchedule(); sin regla extra */
+/* Eventos de varios días (banner arriba del día) */
+.sched-multiday{
+  position:absolute; left:3px; right:3px; height:22px; top:4px;
+  border-radius:5px;
+  padding:0 7px;
+  font-size:.66rem;
+  font-weight:600;
+  display:flex; align-items:center; gap:5px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  color:#1a1208;
+  box-shadow:0 1px 3px rgba(0,0,0,.15);
+  z-index:3;
+  cursor:pointer;
 }
+.sched-multiday.start{ border-top-right-radius:0; border-bottom-right-radius:0; }
+.sched-multiday.mid{ border-radius:0; }
+.sched-multiday.end{ border-top-left-radius:0; border-bottom-left-radius:0; }
+.sched-multiday.single{ border-radius:5px; }
 
-/* ---------- Línea "ahora" ---------- */
+/* Línea "ahora" */
 .sched-now-line{
-  position:absolute;
-  left:0;
-  right:0;
-  height:2px;
-  background:var(--red);
-  z-index:4;
-  pointer-events:none;
+  position:absolute; left:0; right:0; height:2px; background:var(--red); z-index:8; pointer-events:none;
 }
 .sched-now-line::before{
-  content:'';
-  position:absolute;
-  left:-4px;
-  top:-3px;
-  width:8px;
-  height:8px;
-  border-radius:50%;
-  background:var(--red);
+  content:''; position:absolute; left:-5px; top:-4px;
+  width:10px; height:10px; border-radius:50%; background:var(--red);
 }
 
-/* ---------- Leyenda ---------- */
+/* Leyenda */
 .sched-legend{
-  display:flex;
-  gap:18px;
-  flex-wrap:wrap;
-  align-items:center;
-  font-size:.72rem;
-  color:var(--text3);
-  margin:0.9rem 0 0;
+  display:flex; gap:16px; flex-wrap:wrap; align-items:center;
+  font-size:.72rem; color:var(--text3); margin:0.9rem 0 0;
 }
 .sched-legend .dot{
-  display:inline-block;
-  width:13px;
-  height:13px;
-  border-radius:4px;
-  margin-right:6px;
-  vertical-align:middle;
+  display:inline-block; width:13px; height:13px; border-radius:4px;
+  margin-right:6px; vertical-align:middle;
 }
 
-/* ---------- Estado vacío (opcional) ---------- */
-.sched-empty{
-  padding:1.5rem;
-  text-align:center;
-  color:var(--text3);
-  font-size:.85rem;
-}
-
-/* ===================== RESPONSIVE MÓVIL ===================== */
+/* Responsive móvil */
 @media(max-width:700px){
-  .sched-wrap{ padding:6px; }
-  .sched{
-    grid-template-columns:44px repeat(7,minmax(150px,1fr));
-    min-width:1150px;
-  }
-  .sched-head{
-    font-size:.62rem;
-    padding:6px 4px 5px;
-  }
-  .sched-head .sched-day-num{
-    font-size:1rem;
-    min-width:26px;
-    padding:1px 5px;
-  }
-  .sched-hours div{
-    height:52px;
-    line-height:52px;
-    font-size:.58rem;
-    padding-right:5px;
-  }
-  .sched-block{
-    font-size:.68rem;
-  }
-  .sched-block.sched-task .task-name{
-    font-size:.68rem;
-  }
-  .sched-block.sched-task .task-time-pill{
-    font-size:.58rem;
-  }
+  :root{ --sched-hour-h: 48px; --sched-col-min: 150px; }
+  .sched-wrap{ padding:0; border-radius:12px; max-height:none; }
+  .sched{ grid-template-columns: 46px repeat(7, minmax(var(--sched-col-min), 1fr)); }
+  .sched-head{ height:56px; font-size:.6rem; padding:6px 4px 4px; }
+  .sched-head .sched-day-name{ font-size:.58rem; }
+  .sched-head .sched-day-num{ font-size:.95rem; padding:1px 6px; }
+  .sched-corner{ height:56px; }
+  .sched-hours div{ font-size:.6rem; padding-right:5px; }
+  .sched-block{ font-size:.7rem; padding:2px 5px; }
+  .sched-block strong{ font-size:.72rem; }
+  .sched-block.sched-task .task-name{ font-size:.66rem; }
+  .sched-block.sched-task .task-time-pill{ font-size:.58rem; }
 }
-
 
 
 
@@ -2563,13 +2500,54 @@ textarea {
         <div class="form-group-full"><label>Tarea *</label><input type="text" id="taskName" placeholder="Ej: Ir al súper" maxlength="80"></div>
       </div>
 
-         <div class="habit-step" data-step="schedule">
-        <p class="wizard-step-label">¿Cuándo y con qué prioridad?</p>
-        <div class="form-row-3">
-          <div class="form-group"><label>Hora inicio (opcional)</label><input type="time" id="taskTime"></div>
-          <div class="form-group"><label>Hora fin (opcional)</label><input type="time" id="taskEndTime"></div>
+      <div class="habit-step" data-step="schedule">
+        <p class="wizard-step-label">¿Cuándo?</p>
+
+        <div class="form-group-full" style="margin-bottom:1rem">
+          <label>¿Qué tipo de evento es?</label>
+          <div style="display:flex;gap:10px;margin-top:6px" id="taskTypeRow">
+            <button type="button" class="wizard-choice-btn selected" onclick="chooseTaskType('single',this)">📅 Tarea de un día</button>
+            <button type="button" class="wizard-choice-btn" onclick="chooseTaskType('multi',this)">🗓️ Evento de varios días</button>
+          </div>
+          <input type="hidden" id="taskMultiDay" value="no">
+        </div>
+
+        <!-- Si es de un día -->
+        <div id="taskSingleFields">
+          <div class="form-row-3">
+            <div class="form-group"><label>Fecha</label><input type="date" id="taskDate"></div>
+            <div class="form-group"><label>Hora inicio (opcional)</label><input type="time" id="taskTime"></div>
+            <div class="form-group"><label>Hora fin (opcional)</label><input type="time" id="taskEndTime"></div>
+          </div>
+        </div>
+
+        <!-- Si es multi-día -->
+        <div id="taskMultiDayFields" style="display:none">
+          <div class="form-row">
+            <div class="form-group"><label>Fecha inicio</label><input type="date" id="taskDateMultiStart"></div>
+            <div class="form-group"><label>Fecha fin *</label><input type="date" id="taskEndDate"></div>
+          </div>
+          <div class="form-group-full">
+            <label>Color del banner en el horario</label>
+            <select id="taskMultiDayColor">
+              <option value="#bbf7d0">🟢 Verde</option>
+              <option value="#bfdbfe">🔵 Azul</option>
+              <option value="#fef08a">🟡 Amarillo</option>
+              <option value="#fed7aa">🟠 Naranja</option>
+              <option value="#e9d5ff">🟣 Morado</option>
+            </select>
+          </div>
+          <p style="font-size:0.75rem;color:var(--text3);margin-top:0.3rem">Los eventos de varios días aparecen como banner arriba de cada día en el horario semanal.</p>
+        </div>
+
+        <!-- Prioridad (siempre) -->
+        <div class="form-row" style="margin-top:0.8rem">
           <div class="form-group"><label>Prioridad</label>
-            <select id="taskPriority"><option value="high">🔴 Alta</option><option value="mid" selected>🟡 Media</option><option value="low">🟢 Baja</option></select>
+            <select id="taskPriority">
+              <option value="high">🔴 Alta</option>
+              <option value="mid" selected>🟡 Media</option>
+              <option value="low">🟢 Baja</option>
+            </select>
           </div>
         </div>
       </div>
@@ -2586,10 +2564,10 @@ textarea {
       </div>
 
       <div class="habit-step" data-step="category">
-        <p class="wizard-step-label">Categoría y fecha</p>
-        <div class="form-row">
-          <div class="form-group"><label>Categoría</label><select id="taskCategory"></select></div>
-          <div class="form-group"><label>Fecha</label><input type="date" id="taskDate"></div>
+        <p class="wizard-step-label">Categoría</p>
+        <div class="form-group-full">
+          <label>Categoría</label>
+          <select id="taskCategory"></select>
         </div>
       </div>
 
@@ -2608,6 +2586,7 @@ textarea {
     </div>
   </div>
 </div>
+
 
 <!-- MODAL: EDITAR PARÁMETROS CORE -->
 <div class="modal-overlay" id="editCoreModal">
@@ -2944,7 +2923,7 @@ textarea {
     </div>
     <div class="form-row">
       <div class="form-group"><label>Color</label>
-        <select id="blkColor"><option value="#bbf7d0">🟢 Verde</option><option value="#bfdbfe">🔵 Azul</option><option value="#fef08a">🟡 Amarillo</option><option value="#fbcfe8">🩷 Rosa</option><option value="#fed7aa">🟠 Naranja</option><option value="#e9d5ff">🟣 Lila</option></select></div>
+        <select id="blkColor"><option value="#bbf7d0">🟢 Verde</option><option value="#bfdbfe">🔵 Azul</option><option value="#fef08a">🟡 Amarillo</option><option value="#fed7aa">🟠 Naranja</option><option value="#e9d5ff">🟣 Lila</option></select></div>
       <div class="form-group"><label>Avisarme 10 min antes</label>
         <select id="blkNotify"><option value="no">No</option><option value="yes">Sí</option></select></div>
     </div>
@@ -3465,6 +3444,27 @@ textarea {
       <div class="card" style="margin-bottom:0">
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:1rem">
           <button class="btn btn-secondary btn-sm" onclick="enableNotifications()">🔔 Activar notificaciones</button>
+          <div id="notifSettingsBlock" style="margin-top:1rem;display:none">
+  <p style="font-size:0.78rem;font-weight:500;color:var(--text2);margin-bottom:0.6rem">⚙️ Configuración de notificaciones</p>
+  <div class="form-row">
+    <div class="form-group"><label>Avisar cuando necesidad ≤ (%)</label>
+      <input type="number" id="notifLowPct" min="1" max="50" step="1" value="10" onchange="saveNotifSettings()">
+    </div>
+    <div class="form-group"><label>Recordatorio hábitos diarios</label>
+      <input type="time" id="notifDailyHour" value="20:00" onchange="saveNotifSettings()">
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>Notificación matutina</label>
+      <input type="time" id="notifMorningHour" value="08:00" onchange="saveNotifSettings()">
+    </div>
+    <div class="form-group"><label>Aviso check point de agua</label>
+      <select id="notifWaterCp" onchange="saveNotifSettings()">
+        <option value="yes">Sí</option><option value="no">No</option>
+      </select>
+    </div>
+  </div>
+</div>
           <button class="btn btn-secondary btn-sm" onclick="renamePlant()">✏️ Renombrar planta</button>
           <button class="btn btn-secondary btn-sm" onclick="openEditCore('all')">⚙️ Ajustar todos los parámetros</button>
         </div>
@@ -3912,6 +3912,137 @@ let builtinGoalsHomeVisible = {__german:true,__spagatt:true,__books:true};
 let agendaViewDate=null; // null = hoy; si no, un date string YYYY-MM-DD
 let scheduleWeekOffset = 0; // 0 = semana actual, -1 = anterior, +1 = siguiente…
 let scheduleZoom = 1; // 1 = normal, 0.5 = mitad, 1.5 = 150%...
+// Configuración de notificaciones
+let notifSettings = {
+  lowNeedPercent: 10,          // % de necesidad para avisar
+  dailyHabitHour: "20:00",      // hora del recordatorio de hábitos diarios
+  waterCheckpoint: true,        // avisar al acercarse un check point de agua
+  morningMotivation: true,      // notificación matutina con frase
+  morningHour: "08:00",         // hora de la notificación matutina
+  enabled: false
+};
+let _notifCheckTimer = null;
+let _sentNotifsToday = new Set(); // evita duplicados en el mismo día
+
+// --- Helpers de notificaciones ---
+function todayNotifKey(suffix){
+  return getTodayKey()+"_"+suffix;
+}
+function wasNotifSent(suffix){
+  return _sentNotifsToday.has(todayNotifKey(suffix));
+}
+function markNotifSent(suffix){
+  _sentNotifsToday.add(todayNotifKey(suffix));
+}
+async function sendLocalNotification(title, body){
+  try{
+    if(window.Capacitor?.Plugins?.LocalNotifications){
+      await window.Capacitor.Plugins.LocalNotifications.schedule({
+        notifications:[{
+          id: strId(title+body+Date.now()),
+          title, body,
+          schedule:{ at:new Date(Date.now()+1000), allowWhileIdle:true }
+        }]
+      });
+      return;
+    }
+    if("Notification" in window && Notification.permission==="granted"){
+      const reg=await navigator.serviceWorker?.ready;
+      if(reg) reg.showNotification(title,{ body, icon:"icon-192.png" });
+      else new Notification(title,{ body, icon:"icon-192.png" });
+    }
+  }catch(e){ console.warn("[notif]", e); }
+}
+
+// Comprueba cada minuto si hay que lanzar notificaciones de las configuradas
+function startNotifChecker(){
+  if(_notifCheckTimer) clearInterval(_notifCheckTimer);
+  _notifCheckTimer = setInterval(runNotifChecks, 60000);
+  runNotifChecks(); // ejecutar al arrancar
+}
+function resetNotifCacheIfNeeded(){
+  // Limpia el set si es de otro día
+  const anyKey = [..._sentNotifsToday][0];
+  if(anyKey && !anyKey.startsWith(getTodayKey())){
+    _sentNotifsToday.clear();
+  }
+}
+function runNotifChecks(){
+  if(!notifSettings.enabled) return;
+  if(!("Notification" in window) || Notification.permission!=="granted") return;
+  resetNotifCacheIfNeeded();
+
+  const now = new Date();
+  const nowMin = now.getHours()*60 + now.getMinutes();
+  const hhmmNow = `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
+
+  // --- 1) Necesidades por debajo del umbral ---
+  const threshold = notifSettings.lowNeedPercent || 10;
+  const needs = getAllNeeds();
+  needs.forEach(n=>{
+    const val = needValue(n.id);
+    if(val <= threshold && val > 0){
+      const key = "low_"+n.id;
+      if(!wasNotifSent(key)){
+        markNotifSent(key);
+        sendLocalNotification(`🌱 ${plant.name} — ${n.name} al ${Math.round(val)}%`,
+          `Tu planta necesita ${n.name.toLowerCase()} urgente. Entra en LevelUp antes de que sea tarde.`);
+      }
+    }
+  });
+
+  // --- 2) Hábitos diarios al final del día ---
+  if(notifSettings.dailyHabitHour){
+    const [h,m] = notifSettings.dailyHabitHour.split(":").map(Number);
+    const targetMin = h*60+m;
+    if(nowMin >= targetMin && nowMin < targetMin+10){
+      // Solo hábitos custom obligatorios o diarios pendientes
+      const pendingHabits = customHabits.filter(h=>{
+        if(h.freq!=="daily") return false;
+        const logs = (habitLogs[h.id]||[]).filter(l=>l.date===getTodayKey());
+        return logs.length===0;
+      });
+      // Pendientes de sistema (obligatorios no hechos)
+      const pendingCore = getPendientes();
+      const total = pendingHabits.length + pendingCore.filter(p=>!p.customId).length;
+      if(total>0 && !wasNotifSent("dailyPending")){
+        markNotifSent("dailyPending");
+        sendLocalNotification(`⏰ Quedan ${total} pendientes hoy`,
+          `Aún tienes hábitos obligatorios sin completar. La planta muere si no los haces.`);
+      }
+    }
+  }
+
+  // --- 3) Agua: check point próximo ---
+  if(notifSettings.waterCheckpoint && plant.alive && !isDisabledCore('agua')){
+    const cps = (coreParams.agua.checkpoints||[]);
+    cps.forEach(cp=>{
+      const [ch,cm] = cp.time.split(":").map(Number);
+      const cpMin = ch*60+cm;
+      const minsLeft = cpMin - nowMin;
+      if(minsLeft>0 && minsLeft<=20 && hydration.loggedToday < cp.liters){
+        const key = "wcp_"+cp.time;
+        if(!wasNotifSent(key)){
+          markNotifSent(key);
+          const remaining = (cp.liters - hydration.loggedToday).toFixed(2);
+          sendLocalNotification(`💧 Check point en ${minsLeft} min`,
+            `A las ${cp.time} debes haber bebido ${cp.liters}L. Te faltan ${remaining}L.`);
+        }
+      }
+    });
+  }
+
+  // --- 4) Notificación matutina con frase ---
+  if(notifSettings.morningMotivation && notifSettings.morningHour){
+    const [mh,mm] = notifSettings.morningHour.split(":").map(Number);
+    const targetMin = mh*60+mm;
+    if(nowMin >= targetMin && nowMin < targetMin+10 && !wasNotifSent("morning")){
+      markNotifSent("morning");
+      sendLocalNotification(`🌿 Buenos días, ${plant.name}`,
+        getDailyQuote());
+    }
+  }
+}
 
 function changeAgendaDay(delta){
   if(delta===0){agendaViewDate=null;}
@@ -4336,7 +4467,7 @@ function toggleAppPage(id){
 // SAVE Y LOAD
 function save(){
   updateAllLevels();
-  const s={plant, weeklyBlocks, disabledCoreHabits,disabledBuiltinGoals,builtinGoalsHomeVisible,needsState,hydration,flexibility,energy,sleep,goals,phoneUsage,dailyActions,streak,customHabits,customNeedStates,habitLogs,habitStreaks,protector,agendaTasks,books,longGoals,monthlyObjs,orderQuestions,coreParams,lastDecayTs,sportCats,disabledCoreHabits,disabledBuiltinGoals,recurringTasks,forest,lastAppTouch,corkNotes,motivData,agendaCats,disabledAppPages,obligatoryCoreHabits};
+  const s={notifSettings, plant, weeklyBlocks, disabledCoreHabits,disabledBuiltinGoals,builtinGoalsHomeVisible,needsState,hydration,flexibility,energy,sleep,goals,phoneUsage,dailyActions,streak,customHabits,customNeedStates,habitLogs,habitStreaks,protector,agendaTasks,books,longGoals,monthlyObjs,orderQuestions,coreParams,lastDecayTs,sportCats,disabledCoreHabits,disabledBuiltinGoals,recurringTasks,forest,lastAppTouch,corkNotes,motivData,agendaCats,disabledAppPages,obligatoryCoreHabits};
   try{localStorage.setItem("levelup_v7",JSON.stringify(s));}catch(e){console.warn(e);}
   scheduleNotifications();
 }
@@ -4351,6 +4482,7 @@ function load(){
     if(plant.level===1&&plant.xpNext!==undefined&&plant.xpNext!==250){
       plant.xpNext=250;
     }
+    notifSettings = s.notifSettings || { lowNeedPercent:10, dailyHabitHour:"20:00", waterCheckpoint:true, morningMotivation:true, morningHour:"08:00", enabled:false };
     needsState=s.needsState||{};
     weeklyBlocks=s.weeklyBlocks||[];
     hydration=s.hydration||{};
@@ -6275,25 +6407,6 @@ function toggleProtectorModeFields(){
   }
 }
 
-function changeScheduleZoom(dir){
-  if(dir===0) scheduleZoom=1;
-  else {
-    const steps=[0.25,0.3,0.35,0.4,0.5,0.6,0.7,0.8,0.9,1,1.1,1.2,1.3,1.5,1.7,2];
-    const idx=steps.findIndex(z=>Math.abs(z-scheduleZoom)<0.01);
-    const cur=idx<0?9:idx;
-    const next=Math.max(0,Math.min(steps.length-1, cur+dir));
-    scheduleZoom=steps[next];
-  }
-  applyScheduleZoom();
-  renderSchedule();
-}
-
-function applyScheduleZoom(){
-  const wrap=document.getElementById("scheduleGrid");
-  const lbl=document.getElementById("scheduleZoomLabel");
-  if(wrap) wrap.style.setProperty("--sched-zoom", scheduleZoom);
-  if(lbl) lbl.textContent=Math.round(scheduleZoom*100)+"%";
-}
 
 function renderProtectorTargetOptions(){
   const sel=document.getElementById("protectorTarget");if(!sel)return;
@@ -6390,28 +6503,50 @@ function deleteBookFromModal(){
 function filterBooks(genre,btn){booksFilter=genre;document.querySelectorAll("#booksFilterRow .btn").forEach(b=>b.classList.remove("active-filter"));if(btn)btn.classList.add("active-filter");renderBooksSection();}
 
 
-
-// AGENDA
 function openTaskModal(editId){
   document.getElementById("taskModal").classList.add("open");
   renderAgendaCatOptions();
   document.getElementById("taskEditId").value=editId||"";
   document.getElementById("taskModalTitle").textContent=editId?"Editar tarea":"Nueva tarea";
+
+  // Reset general
   document.getElementById("taskDate").value=getTodayKey();
+  document.getElementById("taskDateMultiStart").value=getTodayKey();
+  document.getElementById("taskEndDate").value="";
   document.getElementById("taskTimesPerDay").value="1";
   document.getElementById("taskUnitLabel").value="";
+  document.getElementById("taskMultiDay").value="no";
+  document.getElementById("taskMultiDayColor").value="#bbf7d0";
+  document.getElementById("taskTime").value="";
+  document.getElementById("taskEndTime").value="";
+  document.querySelectorAll("#taskTypeRow .wizard-choice-btn").forEach((b,i)=>{
+    b.classList.toggle("selected", i===0);
+  });
+  toggleMultiDayFields();
+
   if(editId){
     const t=agendaTasks.find(x=>x.id===editId);
     if(t){
-      document.getElementById("taskName").value=t.name;
+      document.getElementById("taskName").value=t.name||"";
       document.getElementById("taskTime").value=t.time||"";
       document.getElementById("taskEndTime").value=t.endTime||"";
-      document.getElementById("taskPriority").value=t.priority;
-      document.getElementById("taskCategory").value=t.category;
-      document.getElementById("taskDate").value=t.date;
+      document.getElementById("taskPriority").value=t.priority||"mid";
+      document.getElementById("taskCategory").value=t.category||"Personal";
       document.getElementById("taskNotes").value=t.notes||"";
       document.getElementById("taskTimesPerDay").value=t.timesPerDay||1;
       document.getElementById("taskUnitLabel").value=t.unitLabel||"";
+      document.getElementById("taskMultiDay").value=t.isMultiDay?"yes":"no";
+      if(t.isMultiDay){
+        document.getElementById("taskDateMultiStart").value=t.date||getTodayKey();
+        document.getElementById("taskEndDate").value=t.endDate||"";
+        document.getElementById("taskMultiDayColor").value=t.color||"#bbf7d0";
+      } else {
+        document.getElementById("taskDate").value=t.date||getTodayKey();
+      }
+      document.querySelectorAll("#taskTypeRow .wizard-choice-btn").forEach((b,i)=>{
+        b.classList.toggle("selected", (i===1)===!!t.isMultiDay);
+      });
+      toggleMultiDayFields();
       updateTaskTimesInputs();
       if(t.multiTimes){
         t.multiTimes.forEach((time,i)=>{
@@ -6421,8 +6556,10 @@ function openTaskModal(editId){
       }
     }
   } else {
-    ["taskName","taskTime","taskEndTime","taskNotes"].forEach(id=>{document.getElementById(id).value="";});
-    document.getElementById("taskPriority").value="mid";document.getElementById("taskCategory").value="Personal";
+    document.getElementById("taskName").value="";
+    document.getElementById("taskPriority").value="mid";
+    document.getElementById("taskCategory").value="Personal";
+    document.getElementById("taskNotes").value="";
     updateTaskTimesInputs();
   }
   taskWizardStep=0;renderTaskWizard();
@@ -6430,6 +6567,15 @@ function openTaskModal(editId){
 
 const TASK_WIZARD_STEPS=["identity","schedule","repeat","category","notes"];
 let taskWizardStep=0;
+
+
+function chooseTaskType(type,btn){
+  document.getElementById("taskMultiDay").value = type==="multi" ? "yes" : "no";
+  document.querySelectorAll("#taskTypeRow .wizard-choice-btn").forEach(b=>b.classList.remove("selected"));
+  if(btn)btn.classList.add("selected");
+  toggleMultiDayFields();
+}
+
 function renderTaskWizard(){
   const steps=TASK_WIZARD_STEPS;
   if(taskWizardStep>=steps.length)taskWizardStep=steps.length-1;
@@ -6442,11 +6588,33 @@ function renderTaskWizard(){
   document.getElementById("taskWizardNextBtn").style.display=taskWizardStep===steps.length-1?"none":"";
   document.getElementById("taskWizardSaveBtn").style.display=taskWizardStep===steps.length-1?"":"none";
 }
+
 function taskWizardNext(){
   const cur=TASK_WIZARD_STEPS[taskWizardStep];
   if(cur==="identity"&&!document.getElementById("taskName").value.trim()){toast("Escribe el nombre de la tarea");return;}
+  if(cur==="schedule"){
+    const isMulti = document.getElementById("taskMultiDay").value==="yes";
+    if(isMulti){
+      const start = document.getElementById("taskDateMultiStart").value;
+      const end = document.getElementById("taskEndDate").value;
+      if(!start){toast("Elige la fecha de inicio");return;}
+      if(!end){toast("Elige la fecha fin del evento");return;}
+      if(end<start){toast("La fecha fin no puede ser anterior a la de inicio");return;}
+    } else {
+      const tStart=document.getElementById("taskTime").value;
+      const tEnd=document.getElementById("taskEndTime").value;
+      if(tStart&&tEnd&&tEnd<=tStart){toast("La hora fin debe ser posterior a la de inicio");return;}
+      if(!document.getElementById("taskDate").value){toast("Elige la fecha");return;}
+    }
+  }
   taskWizardStep=Math.min(taskWizardStep+1,TASK_WIZARD_STEPS.length-1);
   renderTaskWizard();
+}
+
+function toggleMultiDayFields(){
+  const isMulti = document.getElementById("taskMultiDay").value==="yes";
+  document.getElementById("taskSingleFields").style.display = isMulti ? "none" : "";
+  document.getElementById("taskMultiDayFields").style.display = isMulti ? "" : "none";
 }
 function taskWizardBack(){taskWizardStep=Math.max(taskWizardStep-1,0);renderTaskWizard();}
 
@@ -6474,45 +6642,61 @@ function deleteTaskCheck(taskId,checkId){
 
 function saveTask(){
   const name=document.getElementById("taskName").value.trim();
-    const tStart=document.getElementById("taskTime")?.value||"";
-  const tEnd=document.getElementById("taskEndTime")?.value||"";
-  if(tStart&&tEnd&&tEnd<=tStart){toast("La hora fin debe ser posterior a la de inicio");return;}
   if(!name){toast("Escribe la tarea");return;}
   const editId=document.getElementById("taskEditId").value;
   const timesPerDay=parseInt(document.getElementById("taskTimesPerDay")?.value)||1;
   const unitLabel=document.getElementById("taskUnitLabel")?.value.trim()||"";
-  let multiTimes=[];
-  if(timesPerDay>1){
-    for(let i=0;i<timesPerDay;i++){
-      const el=document.getElementById("taskMultiTime_"+i);
-      multiTimes.push(el?.value||"");
+  const isMultiDay=document.getElementById("taskMultiDay").value==="yes";
+  const color=document.getElementById("taskMultiDayColor")?.value||"#bbf7d0";
+
+  let date, endDate=null, time="", endTime="", multiTimes=[];
+
+  if(isMultiDay){
+    date=document.getElementById("taskDateMultiStart").value;
+    endDate=document.getElementById("taskEndDate").value;
+    if(!date){toast("Elige la fecha de inicio");return;}
+    if(!endDate){toast("Elige la fecha fin");return;}
+    if(endDate<date){toast("La fecha fin no puede ser anterior a la de inicio");return;}
+  } else {
+    date=document.getElementById("taskDate").value;
+    time=document.getElementById("taskTime").value;
+    endTime=document.getElementById("taskEndTime").value;
+    if(!date){toast("Elige la fecha");return;}
+    if(time&&endTime&&endTime<=time){toast("La hora fin debe ser posterior a la de inicio");return;}
+    if(timesPerDay>1){
+      for(let i=0;i<timesPerDay;i++){
+        const el=document.getElementById("taskMultiTime_"+i);
+        multiTimes.push(el?.value||"");
+      }
+      time = multiTimes[0]||"";
     }
   }
+
   const existingTask=editId?agendaTasks.find(x=>x.id===editId):null;
   const task={
     id:editId||"t_"+Date.now(),
     name,
-    time:timesPerDay>1?(multiTimes[0]||""):document.getElementById("taskTime").value,
-    endTime:document.getElementById("taskEndTime").value,
+    time, endTime,
     priority:document.getElementById("taskPriority").value,
     category:document.getElementById("taskCategory").value,
-    date:document.getElementById("taskDate").value,
+    date,
     notes:document.getElementById("taskNotes").value.trim(),
     done:existingTask?.done||false,
     failed:existingTask?.failed||false,
-    timesPerDay,
+    timesPerDay:isMultiDay?1:timesPerDay,
     timesCompleted:existingTask?.timesCompleted||0,
-    multiTimes,
+    multiTimes:isMultiDay?[]:multiTimes,
     xpEarned:existingTask?.xpEarned||0,
     unitLabel,
+    isMultiDay,
+    endDate,
+    color:isMultiDay?color:null,
     checks: existingTask?.checks||[]
   };
   if(editId){const idx=agendaTasks.findIndex(x=>x.id===editId);if(idx>=0)agendaTasks[idx]=task;}
   else agendaTasks.push(task);
-  closeTaskModal();save();renderAgenda();toast("📅 Tarea guardada");
+  closeTaskModal();save();renderAgenda();renderSchedule();toast("📅 Tarea guardada");
 }
-
-
 
 function incrementMultiTask(id){
   const t=agendaTasks.find(x=>x.id===id);if(!t)return;
@@ -6921,186 +7105,8 @@ function layoutOverlaps(items){
   return result;
 }
 
-function renderSchedule(){
-  const el=document.getElementById("scheduleGrid");
-  if(!el) return;
 
-  const order=[1,2,3,4,5,6,0];               // Lun..Dom
-  const names=["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
-  const toMin=s=>{const [h,m]=s.split(":").map(Number);return h*60+m;};
-  const H=SCHED_END-SCHED_START, base=SCHED_START*60, endMin=SCHED_END*60;
 
-  const mon=getScheduleMonday();
-  const sun=new Date(mon);sun.setDate(mon.getDate()+6);
-
-  // Subtítulo dinámico
-  const sub=document.getElementById("scheduleSubtitle");
-  if(sub){
-    const f=d=>d.toLocaleDateString("es-ES",{day:"numeric",month:"short"});
-    sub.textContent=`Semana del ${f(mon)} al ${f(sun)} · ${agendaTasks.filter(t=>t.time&&!t.failed).length} tareas con hora en total`;
-  }
-  const todayBtn=document.getElementById("scheduleTodayBtn");
-  if(todayBtn) todayBtn.style.display = scheduleWeekOffset===0 ? "none" : "";
-
-  const dk=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  const todayDow=new Date().getDay();
-  const now=new Date();
-  const nowMin=now.getHours()*60+now.getMinutes();
-
-  // ---------- Cabecera ----------
-  let html=`<div class="sched-corner"></div>`;
-  order.forEach((d,i)=>{
-    const dt=new Date(mon);dt.setDate(mon.getDate()+i);
-    const isToday=scheduleWeekOffset===0 && d===todayDow;
-    html+=`<div class="sched-head${isToday?" today":""}">
-      ${names[d]}<span class="sched-day-num">${dt.getDate()}</span>
-    </div>`;
-  });
-
-  // ---------- Columna de horas ----------
-  html+=`<div class="sched-hours">`+
-    Array.from({length:H},(_,i)=>`<div>${SCHED_START+i}:00</div>`).join("")+
-    `</div>`;
-
-  // ---------- 7 columnas de día ----------
-  order.forEach((d,i)=>{
-    const dt=new Date(mon);dt.setDate(mon.getDate()+i);
-    const key=dk(dt);
-    const isToday=scheduleWeekOffset===0 && d===todayDow;
-
-    let col=`<div class="sched-col${isToday?" today":""}" style="height:${H*HOUR_PX}px">`;
-
-    // 1) Bloques fijos (sin reparto: van a todo el ancho)
-    weeklyBlocks.filter(b=>(b.days||[]).includes(d)).forEach(b=>{
-      const s=Math.max(toMin(b.start),base);
-      const e=Math.min(toMin(b.end),endMin);
-      if(e<=s)return;
-      const top=((s-base)/60*HOUR_PX);
-      const h=((e-s)/60*HOUR_PX);
-      col+=`<div class="sched-block"
-        style="top:${top}px;height:${h}px;left:3px;right:3px;background:${b.color}"
-        onclick="openBlockModal('${b.id}')" title="${b.name} · ${b.start}–${b.end}">
-        <strong>${b.name}</strong>
-        <span class="sched-block-time">${b.start}–${b.end}</span>
-      </div>`;
-    });
-
-    // 2) Tareas con hora — preparar intervalos
-    //    IMPORTANTE: el "e" para el reparto es el que se verá (con mínimo de 18 px),
-    //    así una tarea de 15 min reserva 18px y la siguiente se aparta, no se pisa.
-    const MIN_H_PX = 18;
-    const rawTasks = agendaTasks
-      .filter(t => t.date===key && t.time && !t.failed)
-      .map(t=>{
-        const s=toMin(t.time);
-        let e = t.endTime ? toMin(t.endTime) : s+15;
-        if(e<=s) e=s+15;
-        const sC=Math.max(s,base);
-        const eC=Math.min(e,endMin);
-        const visualEnd = Math.max(eC, sC + Math.ceil((MIN_H_PX/ HOUR_PX)*60) ); // en minutos
-        return {t, s:sC, e:eC, ve: Math.min(visualEnd, endMin)};
-      })
-      .filter(x=>x.e>x.s);
-
-    // Repartir por columnas usando el fin VISUAL (para que lo que se ve no se solape)
-    const laid = layoutOverlaps(rawTasks.map(r=>({...r, e:r.ve})));
-
-    laid.forEach((item, idx)=>{
-      const orig = rawTasks[idx];
-      const {t,s,e,col:colIdx,cols} = item;
-      const top=((s-base)/60*HOUR_PX);
-      const realH=((orig.e-orig.s)/60*HOUR_PX);
-      const h=Math.max(realH, MIN_H_PX);
-
-      const gapPx=2;
-      const left = `calc(3px + ${colIdx} * ((100% - 6px - ${(cols-1)*gapPx}px) / ${cols}) + ${colIdx*gapPx}px)`;
-      const width = `calc((100% - 6px - ${(cols-1)*gapPx}px) / ${cols})`;
-
-      const tags=[];
-      if(t.recurringId) tags.push("🔁");
-      if(t.wasPostponed) tags.push("📆");
-      if(t.done) tags.push("✓");
-      const tagStr=tags.join(" ");
-      const timeLabel=t.endTime?`${t.time}–${t.endTime}`:t.time;
-      const titleStr=`${timeLabel} · ${t.name}${t.category?" · "+t.category:""}${t.wasPostponed?" (pospuesta)":""}${t.recurringId?" (recurrente)":""}`;
-
-      // .tiny si la altura real es menor que 24px → nombre al lado del pill
-      const tinyClass = realH < 24 ? " tiny" : "";
-
-      col+=`<div class="sched-block sched-task${t.done?" done":""}${cols>1?" stack":""}${tinyClass}"
-        style="top:${top}px;height:${h}px;left:${left};width:${width};right:auto;"
-        title="${titleStr}"
-        onclick="openTaskMenu('${t.id}',this)">
-        <span class="task-time-pill">${timeLabel}</span>
-        <span class="task-name">${t.name}${tagStr?" "+tagStr:""}</span>
-      </div>`;
-    });
-
-    // 3) Línea "ahora" en la columna de hoy
-    if(isToday && nowMin>=base && nowMin<endMin){
-      col+=`<div class="sched-now-line" style="top:${(nowMin-base)/60*HOUR_PX}px"></div>`;
-    }
-
-    col+=`</div>`;
-    html+=col;
-  });
-
-  el.innerHTML=html;
-
-  // ---------- Ancho mínimo dinámico según solapes + zoom ----------
-  const maxColsToday = Math.max(1, ...Array.from(el.querySelectorAll(".sched-col")).map(c=>{
-    const blocks=c.querySelectorAll(".sched-block.sched-task");
-    let maxCols=1;
-    blocks.forEach(b=>{
-      const m=b.style.width.match(/\/\s*(\d+)/);
-      if(m) maxCols=Math.max(maxCols, parseInt(m[1]));
-    });
-    return maxCols;
-  }));
-
-    const baseColWidth = window.innerWidth<700 ? 150 : 110;
-  const zoomFactor = Math.max(0.5, scheduleZoom); // el zoom no reduce el min-width (ya lo hace transform)
-  el.style.minWidth = (56 + 7*(baseColWidth * maxColsToday * zoomFactor)) + "px";
-
-  // Aplicar zoom actual
-  applyScheduleZoom();
-
-  // ---------- Leyenda ----------
-  const legend=document.getElementById("scheduleLegend");
-  if(legend){
-    legend.innerHTML=`
-      <div class="sched-legend">
-        <span><span class="dot" style="background:#bbf7d0;border-left:3px solid rgba(0,0,0,.18)"></span>Bloque fijo</span>
-        <span><span class="dot" style="background:#fff;border:1.5px dashed var(--green-md);border-left:3px solid var(--green-md)"></span>Tarea con hora</span>
-        <span><span class="dot" style="background:var(--red)"></span>Hora actual</span>
-        <span>🔁 recurrente · 📆 pospuesta · ✓ completada</span>
-      </div>`;
-  }
-
-  // ---------- En móvil: aterrizar en la columna de hoy ----------
-  const wrap=el.parentElement;
-  if(wrap && window.innerWidth<700 && scheduleWeekOffset===0){
-    const todayCol=wrap.querySelector(".sched-col.today");
-    if(todayCol){
-      wrap.scrollLeft=Math.max(0, todayCol.offsetLeft-50);
-    }else{
-      wrap.scrollLeft=0;
-    }
-  }
-
-  // ---------- Actualizar línea "ahora" cada minuto ----------
-  if(_schedNowTimer) clearInterval(_schedNowTimer);
-  _schedNowTimer=setInterval(()=>{
-    if(scheduleWeekOffset!==0) return;
-    const lineEl=document.querySelector(".sched-now-line");
-    if(!lineEl) return;
-    const n=new Date();
-    const nm=n.getHours()*60+n.getMinutes();
-    if(nm<base||nm>=endMin){lineEl.style.display="none";return;}
-    lineEl.style.display="";
-    lineEl.style.top=`${(nm-base)/60*HOUR_PX}px`;
-  },60000);
-}
 
 function openBlockModal(id){
   document.getElementById("blockModal").classList.add("open");
@@ -7176,7 +7182,13 @@ async function enableNotifications(){
   if(!("Notification" in window)){toast("Tu navegador no soporta notificaciones");return;}
   const p=await Notification.requestPermission();
   toast(p==="granted"?"🔔 Notificaciones activadas":"🔕 Permiso denegado");
-  if(p==="granted")scheduleWebNotifications();
+  if(p==="granted"){
+    notifSettings.enabled = true;
+    save();
+    scheduleNotifications();
+    startNotifChecker();
+    renderNotifSettings();
+  }
 }
 
 async function showWebNotif(title,body){
@@ -7742,52 +7754,247 @@ if(ebl){
       </div>
     </div>`;
   }).join("");
+  
 
   }
+  renderNotifSettings();
 
 }
 
-// Recibe una lista de intervalos {s, e, ...} y devuelve los mismos items
-// con {col, cols} asignados para repartir el ancho dentro del día.
-function layoutOverlaps(items){
-  // Ordenados por inicio, luego por fin
-  const sorted = items.slice().sort((a,b)=> a.s-b.s || a.e-b.e);
-  const columns = []; // cada columna guarda el fin del último bloque colocado
-  const result = [];
 
+function changeScheduleZoom(dir){
+  if(dir===0) scheduleZoom=1;
+  else {
+    const steps=[0.6,0.75,0.85,1,1.15,1.3,1.5,1.75,2];
+    const idx=steps.findIndex(z=>Math.abs(z-scheduleZoom)<0.01);
+    const cur=idx<0?3:idx;
+    const next=Math.max(0,Math.min(steps.length-1, cur+dir));
+    scheduleZoom=steps[next];
+  }
+  renderSchedule();
+}
+
+function applyScheduleZoom(){
+  const grid=document.getElementById("scheduleGrid");
+  if(!grid) return;
+  // Zoom afecta SOLO a la altura por hora (no a fuentes ni escala global)
+  const baseHourPx = window.innerWidth<700 ? 48 : 56;
+  const hourPx = Math.round(baseHourPx * scheduleZoom);
+  grid.style.setProperty("--sched-hour-h", hourPx+"px");
+  grid.style.setProperty("--sched-zoom", "1");
+  const lbl=document.getElementById("scheduleZoomLabel");
+  if(lbl) lbl.textContent=Math.round(scheduleZoom*100)+"%";
+}
+
+function fmtEsDate(s){
+  if(!s) return "";
+  return new Date(s+"T00:00:00").toLocaleDateString("es-ES",{day:"2-digit",month:"2-digit",year:"numeric"});
+}
+
+function renderSchedule(){
+  const el=document.getElementById("scheduleGrid");
+  if(!el) return;
+
+  const order=[1,2,3,4,5,6,0]; // Lun..Dom
+  const dayNames=["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
+  const toMin=s=>{const [h,m]=s.split(":").map(Number);return h*60+m;};
+
+  const mon=getScheduleMonday();
+  const sun=new Date(mon);sun.setDate(mon.getDate()+6);
+
+  const sub=document.getElementById("scheduleSubtitle");
+  if(sub){
+    const f=d=>d.toLocaleDateString("es-ES",{day:"numeric",month:"short"});
+    sub.textContent=`Semana del ${f(mon)} al ${f(sun)}`;
+  }
+  const todayBtn=document.getElementById("scheduleTodayBtn");
+  if(todayBtn) todayBtn.style.display = scheduleWeekOffset===0 ? "none" : "";
+
+  const dk=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const todayDow=new Date().getDay();
+  const now=new Date();
+  const nowMin=now.getHours()*60+now.getMinutes();
+
+  // ---------- Cabecera ----------
+  let html=`<div class="sched-corner"></div>`;
+  order.forEach((d,i)=>{
+    const dt=new Date(mon);dt.setDate(mon.getDate()+i);
+    const isToday=scheduleWeekOffset===0 && d===todayDow;
+    html+=`<div class="sched-head${isToday?" today":""}">
+      <span class="sched-day-name">${dayNames[i]}</span>
+      <span class="sched-day-num">${dt.getDate()}</span>
+    </div>`;
+  });
+
+  // ---------- Columna de horas (24h) ----------
+  html+=`<div class="sched-hours">`+
+    Array.from({length:24},(_,i)=>`<div>${String(i).padStart(2,"0")}:00</div>`).join("")+
+    `</div>`;
+
+  // ---------- 7 columnas de día ----------
+  order.forEach((d,i)=>{
+    const dt=new Date(mon);dt.setDate(mon.getDate()+i);
+    const key=dk(dt);
+    const isToday=scheduleWeekOffset===0 && d===todayDow;
+
+    let col=`<div class="sched-col${isToday?" today":""}" data-date="${key}">`;
+
+    // ---- Eventos multi-día (banner arriba) ----
+    const multiEvents=(agendaTasks||[]).filter(t=>t.isMultiDay && t.date<=key && t.endDate && t.endDate>=key);
+    let bannerSlot=0;
+    multiEvents.forEach(ev=>{
+      const isStart = ev.date===key;
+      const isEnd   = ev.endDate===key;
+      const cls = (isStart&&isEnd)?"single":isStart?"start":isEnd?"end":"mid";
+      const top = 4 + bannerSlot*26;
+      bannerSlot++;
+      col+=`<div class="sched-multiday ${cls}"
+  style="top:${top}px;background:${ev.color||'#bfdbfe'}"
+  onclick="event.stopPropagation();openTaskMenu('${ev.id}',this)"
+  title="${ev.name} (De ${fmtEsDate(ev.date)} a ${fmtEsDate(ev.endDate)})">
+  ${isStart?`<span style="font-size:0.7rem">${ev.name}</span>`:`<span style="opacity:0.7">${ev.name}</span>`}
+</div>`;
+    });
+
+    // ---- Bloques fijos semanales ----
+    weeklyBlocks.filter(b=>(b.days||[]).includes(d)).forEach(b=>{
+      const s=toMin(b.start), e=toMin(b.end);
+      if(e<=s) return;
+      const top=(s/60)*100/(24*100/100); // porcentaje visual → usamos px reales
+      const hourPx = parseFloat(getComputedStyle(el).getPropertyValue("--sched-hour-h"))||56;
+      const pxTop=(s/60)*hourPx;
+      const pxH=((e-s)/60)*hourPx;
+      col+=`<div class="sched-block"
+        style="top:${pxTop}px;height:${pxH}px;left:3px;right:3px;background:${b.color}"
+        onclick="openBlockModal('${b.id}')">
+        <strong>${b.name}</strong>
+        <span class="sched-block-time">${b.start} – ${b.end}</span>
+      </div>`;
+    });
+
+    // ---- Tareas del día con hora (no multi-día) ----
+    const MIN_H_PX=20;
+    const rawTasks=(agendaTasks||[])
+      .filter(t=>t.date===key && t.time && !t.isMultiDay && t.isMultiDay!==true)
+      .map(t=>{
+        const s=toMin(t.time);
+        let e = t.endTime ? toMin(t.endTime) : s+30;
+        if(e<=s) e=s+30;
+        return {t, s, e};
+      })
+      .filter(x=>x.e>x.s);
+
+    // layout con solapes visuales mínimos
+    const HOUR_PX = parseFloat(getComputedStyle(el).getPropertyValue("--sched-hour-h"))||56;
+    const MIN_VISUAL_MIN = (MIN_H_PX/HOUR_PX)*60; // minutos mínimos visuales
+    const visualItems = rawTasks.map(r=>({...r, ve: Math.max(r.e, r.s + MIN_VISUAL_MIN)}));
+    const laid = layoutOverlaps(visualItems);
+
+    laid.forEach((item, idx)=>{
+      const orig = rawTasks[idx];
+      const {t,s,col:colIdx,cols} = item;
+      const realH = ((orig.e-orig.s)/60)*HOUR_PX;
+      const h = Math.max(realH, MIN_H_PX);
+      const top = (s/60)*HOUR_PX;
+
+      const gapPx=2;
+      const left = `calc(3px + ${colIdx} * ((100% - 6px - ${(cols-1)*gapPx}px) / ${cols}) + ${colIdx*gapPx}px)`;
+      const width = `calc((100% - 6px - ${(cols-1)*gapPx}px) / ${cols})`;
+
+      const tags=[];
+      if(t.recurringId) tags.push("🔁");
+      if(t.wasPostponed) tags.push("📆");
+      const tagStr=tags.join(" ");
+      const timeLabel=t.endTime?`${t.time}–${t.endTime}`:t.time;
+      const tinyClass = realH < 26 ? " tiny" : "";
+      const failedClass = t.failed?" failed-block":"";
+      const doneClass = t.done?" done":"";
+
+      col+=`<div class="sched-block sched-task${doneClass}${failedClass}${tinyClass}${cols>1?" stack":""}"
+        style="top:${top}px;height:${h}px;left:${left};width:${width}"
+        onclick="event.stopPropagation();openTaskMenu('${t.id}',this)"
+        title="${timeLabel} · ${t.name}${t.category?" · "+t.category:""}">
+        <span class="task-time-pill">${timeLabel}</span>
+        <span class="task-name">${t.name}${tagStr?" "+tagStr:""}</span>
+        ${!tinyClass?`<span class="task-details">${t.category||""}</span>`:""}
+      </div>`;
+    });
+
+    // Línea "ahora"
+    if(isToday){
+      col+=`<div class="sched-now-line" style="top:${(nowMin/60)*HOUR_PX}px"></div>`;
+    }
+
+    col+=`</div>`;
+    html+=col;
+  });
+
+  el.innerHTML=html;
+  applyScheduleZoom();
+
+  // Leyenda
+  const legend=document.getElementById("scheduleLegend");
+  if(legend){
+    legend.innerHTML=`
+      <div class="sched-legend">
+        <span><span class="dot" style="background:#bbf7d0;border-left:3px solid rgba(0,0,0,.18)"></span>Bloque fijo</span>
+        <span><span class="dot" style="background:#fff;border:1.5px solid var(--green-md);border-left:3px solid var(--green-md)"></span>Tarea con hora</span>
+        <span><span class="dot" style="background:#bfdbfe"></span>Evento multi-día</span>
+        <span><span class="dot" style="background:var(--red)"></span>Hora actual</span>
+        <span>🔁 recurrente · 📆 pospuesta</span>
+      </div>`;
+  }
+
+  // En móvil: aterrizar en la columna de hoy y desplazar a la hora actual
+  const wrap=el.parentElement;
+  if(wrap && window.innerWidth<700 && scheduleWeekOffset===0){
+    setTimeout(()=>{
+      const todayCol=wrap.querySelector(".sched-col.today");
+      if(todayCol) wrap.scrollLeft=Math.max(0, todayCol.offsetLeft-60);
+      const hourPx = parseFloat(getComputedStyle(el).getPropertyValue("--sched-hour-h"))||48;
+      wrap.scrollTop = Math.max(0, (nowMin/60)*hourPx - wrap.clientHeight/3);
+    }, 50);
+  }
+
+  // Auto-scroll a las 7:00 en desktop
+  if(wrap && window.innerWidth>=700){
+    setTimeout(()=>{
+      const hourPx = parseFloat(getComputedStyle(el).getPropertyValue("--sched-hour-h"))||56;
+      wrap.scrollTop = Math.max(0, 7*hourPx - 20);
+    }, 50);
+  }
+
+  // Actualizar línea "ahora" cada minuto
+  if(_schedNowTimer) clearInterval(_schedNowTimer);
+  _schedNowTimer=setInterval(()=>{
+    if(scheduleWeekOffset!==0) return;
+    const lineEl=document.querySelector(".sched-now-line");
+    if(!lineEl) return;
+    const n=new Date();
+    const nm=n.getHours()*60+n.getMinutes();
+    const hourPx = parseFloat(getComputedStyle(el).getPropertyValue("--sched-hour-h"))||56;
+    lineEl.style.top=`${(nm/60)*hourPx}px`;
+  },60000);
+}
+
+// layout de solapes (ya existía, se mantiene igual pero garantizando 1 col)
+function layoutOverlaps(items){
+  const sorted = items.slice().sort((a,b)=> a.s-b.s || a.e-b.e);
+  const columns = [];
+  const result = [];
   sorted.forEach(it=>{
     let placed=false;
     for(let c=0;c<columns.length;c++){
-      if(columns[c]<=it.s){
-        columns[c]=it.e;
-        it.col=c;
-        placed=true;
-        break;
-      }
+      if(columns[c]<=it.s){ columns[c]=it.e; it.col=c; placed=true; break; }
     }
-    if(!placed){
-      it.col=columns.length;
-      columns.push(it.e);
-    }
+    if(!placed){ it.col=columns.length; columns.push(it.e); }
     result.push(it);
   });
-
-  // Número total de columnas usadas
   const cols = Math.max(1, columns.length);
   result.forEach(r=>r.cols=cols);
   return result;
 }
 
-function toggleCoreObligatory(key){
-  if(obligatoryCoreHabits.includes(key)){
-    obligatoryCoreHabits=obligatoryCoreHabits.filter(k=>k!==key);
-    toast(`➖ "${key}" quitado de pendientes`);
-  } else {
-    obligatoryCoreHabits.push(key);
-    toast(`⚠️ "${key}" añadido a pendientes obligatorios`);
-  }
-  save();renderAll();
-}
 
 function toggleBuiltinGoalHome(id){
   builtinGoalsHomeVisible[id] = builtinGoalsHomeVisible[id]===false ? true : false;
@@ -8635,10 +8842,14 @@ function renderAgenda(){
   if(todayBtn)todayBtn.style.display=isToday?"none":"";
 
 let overdueTasks=agendaTasks.filter(t=>t.date<today&&!t.done&&!t.failed);
-let todayTasks=agendaTasks.filter(t=>t.date===viewDate);
+let todayTasks=agendaTasks.filter(t=>t.date===viewDate || (t.isMultiDay && t.date<=viewDate && t.endDate>=viewDate));
 let upcoming=agendaTasks.filter(t=>t.date>today&&t.date!==viewDate&&!t.recurringId).sort((a,b)=>a.date.localeCompare(b.date)||((a.time||"").localeCompare(b.time||"")));
   if(agendaFilter!=="all"){todayTasks=todayTasks.filter(t=>t.category===agendaFilter);upcoming=upcoming.filter(t=>t.category===agendaFilter);}
-todayTasks.sort((a,b)=>{if(a.done!==b.done)return a.done?1:-1;return(a.time||"99:99").localeCompare(b.time||"99:99");});
+todayTasks.sort((a,b)=>{
+  if(a.isMultiDay!==b.isMultiDay)return a.isMultiDay?-1:1;
+  if(a.done!==b.done)return a.done?1:-1;
+  return(a.time||"99:99").localeCompare(b.time||"99:99");
+});
 
 const ol=document.getElementById("agendaOverdueList");
 if(ol){
@@ -8691,6 +8902,8 @@ function renderTaskItem(t){
   const isMultiTask=t.timesPerDay&&t.timesPerDay>1;
   const progressLabel=isMultiTask?` <span style="font-size:0.68rem;color:var(--green-md);font-weight:500">(${t.timesCompleted||0}/${t.timesPerDay})</span>`:"";
   const postponedLabel=t.wasPostponed?` <span style="font-size:0.62rem;color:var(--amber);font-weight:500">📆 pospuesta</span>`:"";
+const fmtDate = s => s ? new Date(s+"T00:00:00").toLocaleDateString("es-ES",{day:"2-digit",month:"2-digit",year:"numeric"}) : "";
+const multiDayLabel=t.isMultiDay?` <span style="font-size:0.62rem;color:var(--blue);font-weight:500"> 📆 De ${fmtDate(t.date)} a ${fmtDate(t.endDate)}</span>`:"";
 
   const checksHtml=(t.checks&&t.checks.length)?`
     <div style="margin-top:4px;display:flex;flex-direction:column;gap:3px">
@@ -8704,7 +8917,7 @@ function renderTaskItem(t){
   return `<div class="task-item" style="${stateStyle}">
     <div style="width:7px;height:7px;border-radius:50%;background:${prioColors[t.priority]||"var(--green-lt)"};flex-shrink:0"></div>
     <div class="task-name-wrap">
-      <div class="task-name" style="${nameStyle}">${t.name}${progressLabel}${postponedLabel}</div>
+      <div class="task-name" style="${nameStyle}">${t.name}${progressLabel}${postponedLabel}${multiDayLabel}</div>
       ${t.time?`<div class="task-time" style="margin-top:2px">${t.time}${t.endTime?" – "+t.endTime:""}</div>`:""}
       ${t.notes?`<div style="font-size:0.7rem;color:var(--text3);margin-top:2px">${t.notes}</div>`:""}
       ${checksHtml}
@@ -8723,6 +8936,7 @@ function renderTaskItem(t){
   </div>`;
 }
 
+
 function openTaskMenu(id,btn){
   // Cerrar cualquier menú previo
   document.getElementById("taskContextMenu")?.remove();
@@ -8730,7 +8944,7 @@ function openTaskMenu(id,btn){
   const isRecurring=!!t.recurringId;
 
   const items=[
-    {icon:"🕐",label:"Cambiar hora (solo este día)",action:`changeTaskTime('${t.id}')`,show:true},
+    {icon:"🕐",label:"Cambiar hora de hoy",action:`changeTaskTime('${t.id}')`,show:isRecurring},
     {icon:"➕",label:"Añadir check",action:`addTaskCheck('${t.id}')`,show:true},
     {icon:"📆",label:"Posponer a otro día (-2XP)",action:`postponeTask('${t.id}')`,show:!t.done&&!t.failed},
     {icon:"✏️",label:isRecurring?"Editar tarea recurrente":"Editar tarea",action:isRecurring?`openRecurringModal('${t.recurringId}')`:`openTaskModal('${t.id}')`,show:true},
@@ -8783,6 +8997,27 @@ function renderPhoneChart(){
   phoneChartInst=new Chart(canvas.getContext("2d"),{type:"bar",data:{labels,datasets:[{label:"Horas",data,backgroundColor:data.map(v=>v>(coreParams.movil?.minFatal||5)?"rgba(139,46,26,0.7)":v>(coreParams.movil?.penaltyThreshold||2)?"rgba(184,115,51,0.7)":"rgba(74,124,47,0.7)"),borderColor:data.map(v=>v>(coreParams.movil?.minFatal||5)?"#8b2e1a":v>(coreParams.movil?.penaltyThreshold||2)?"#b87333":"#4a7c2f"),borderWidth:1.5,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:yMax,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:10}}}}}});
 }
 
+function renderNotifSettings(){
+  const block = document.getElementById("notifSettingsBlock");
+  if(!block) return;
+  block.style.display = notifSettings.enabled ? "block" : "none";
+  const pct = document.getElementById("notifLowPct");
+  const dh  = document.getElementById("notifDailyHour");
+  const mh  = document.getElementById("notifMorningHour");
+  const wc  = document.getElementById("notifWaterCp");
+  if(pct) pct.value = notifSettings.lowNeedPercent;
+  if(dh)  dh.value  = notifSettings.dailyHabitHour;
+  if(mh)  mh.value  = notifSettings.morningHour;
+  if(wc)  wc.value  = notifSettings.waterCheckpoint ? "yes":"no";
+}
+function saveNotifSettings(){
+  notifSettings.lowNeedPercent = parseInt(document.getElementById("notifLowPct").value)||10;
+  notifSettings.dailyHabitHour  = document.getElementById("notifDailyHour").value||"20:00";
+  notifSettings.morningHour     = document.getElementById("notifMorningHour").value||"08:00";
+  notifSettings.waterCheckpoint = document.getElementById("notifWaterCp").value==="yes";
+  save();
+  toast("🔔 Configuración de notificaciones guardada");
+}
 
 
 function clearSleepChart(){
@@ -9958,66 +10193,51 @@ window.addEventListener("popstate",(e)=>{
 // Estado inicial para que el botón atrás siempre tenga algo que "popear"
 history.pushState({page:"home"},"");
 
-// ============ TUTORIAL DE BIENVENIDA (tooltip) ============
+
 const TUTORIAL_STEPS=[
-  // === HOME ===
-  {page:"home",selector:null,title:"🏠 Bienvenida a LevelUp",desc:"LevelUp es un tracker de hábitos donde tu progreso se refleja en una planta virtual. Cada hábito que registras alimenta una necesidad de la planta. Si descuidas las necesidades, la planta muere y empiezas de cero, perdiendo XP, nivel y racha — pero conservando libros, metas, agenda y hábitos personalizados. Vamos a verlo todo paso a paso."},
-  {page:"home",selector:'.plant-hero',title:"🌱 Tu planta",desc:"Esta es tu planta. Cambia de forma según su nivel: 🌱 → 🌿 → 🪴 → 🥦 → 🌳. En nivel 8 se convierte en árbol y podrás plantarla en Mi bosque. La barra superior muestra su XP y nivel. El badge naranja indica los días de racha. Si tienes un protector activo, verás un chip morado '🛡️ Protegida'."},
-  {page:"home",selector:'#homeNeedsGrid .need-item',title:"📊 Las 8 necesidades",desc:"Cada tarjeta representa una necesidad: Hidratación, Fuerza, Energía, Inteligencia, Salud, Tranquilidad, Elasticidad y Entretenimiento. El color del borde indica su estado: verde ≥50%, amarillo 25-49%, rojo <25%. Si llega a 0% la planta muere. Pulsa cualquiera para ir directamente al hábito que la alimenta."},
-  {page:"home",selector:'#pendientesCard',title:"⚠️ Pendientes obligatorios",desc:"Aquí aparecen los hábitos que DEBES completar hoy antes de medianoche. Por defecto: Sueño, Test de Orden y Móvil. Si alguno queda sin marcar, la planta muere al día siguiente. Puedes añadir o quitar hábitos de esta lista desde Editar → Hábitos del sistema."},
-  {page:"home",selector:'#protectorActivateBtn',title:"🛡️ Protector de racha",desc:"Cuando necesites un día libre (vacaciones, enfermedad, emergencia), activa el protector. Protección total: pausa TODAS las muertes 24h, cuesta -50 XP y -5 días racha. Protección parcial: protege solo una necesidad, cuesta -10 XP y -2 días racha. Debes elegir un motivo y puedes añadir notas."},
-  {page:"home",selector:'#homeGoalsList',title:"🏆 Metas a largo plazo",desc:"Cada meta tiene progreso, % y a veces fecha límite con cuenta atrás. Puedes añadir una nueva con '+ Nueva meta'. Para sumar progreso manualmente pulsa el botón +. Las metas predefinidas (Alemán B2, Spagatt, Biblioteca) se pueden ocultar del inicio o del todo desde Editar."},
-  {page:"home",selector:'#homeMonthlyObjs',title:"📅 Objetivos del mes",desc:"Objetivos mensuales con cuenta atrás. Puedes vincularlos a un hábito: cada vez que lo registres, el progreso sube +1 y se completa solo al llegar al número de veces marcado. Sin vinculación los marcas manualmente con un clic."},
+  {page:"home",selector:null,title:"🏠 Bienvenida a LevelUp",desc:"LevelUp es un tracker de hábitos donde tu progreso se refleja en una planta virtual. Cada hábito alimenta una necesidad. Si la descuidas, la planta muere y pierdes XP, nivel y racha (pero conservas libros, metas, agenda y hábitos custom). Vamos a verlo todo. Y sí, hay muchas formas de hacer trampa. Hacer trampa solo te afecta a ti y marea a tu planta. Y nadie quiere una planta mareada."},
+  {page:"home",selector:'.plant-hero',title:"🌱 Tu planta",desc:"Cambia de forma según su nivel: 🌱 → 🌿 → 🪴 → 🥦 → 🌳. En nivel 8 se convierte en árbol y puedes plantarla en Mi bosque. La barra superior muestra XP y nivel; el badge naranja, tus días de racha. Si tienes protector activo verás un chip morado '🛡️ Protegida'."},
+  {page:"home",selector:'#homeNeedsGrid .need-item',title:"📊 Las 8 necesidades",desc:"Hidratación, Fuerza, Energía, Inteligencia, Salud, Tranquilidad, Elasticidad y Entretenimiento. El borde indica su estado: verde ≥50%, amarillo 25-49%, rojo <25%. A 0% la planta muere. Pulsa cualquiera para ir al hábito que la alimenta. Si un hábito no te convence, puedes desactivarlo desde Editar."},
+  {page:"home",selector:'#pendientesCard',title:"⚠️ Pendientes obligatorios",desc:"Lo que DEBES completar hoy antes de medianoche: por defecto Sueño, Test de Orden y Móvil. Si alguno queda sin marcar, la planta muere al día siguiente. Puedes añadir o quitar hábitos de esta lista desde Editar → Hábitos del sistema. Sin presión."},
+  {page:"home",selector:'#protectorActivateBtn',title:"🛡️ Protector de racha",desc:"Para cuando la vida real se pone en medio (vacaciones, enfermedad, emergencia...). Protección total: pausa TODAS las muertes 24h, cuesta -50 XP y -5 días racha. Protección parcial: protege solo una necesidad, cuesta -10 XP y -2 días racha. Debes elegir un motivo. No es para usarlo cada semana, ¿eh?"},
+  {page:"home",selector:'#homeGoalsList',title:"🏆 Metas y 📅 objetivos del mes",desc:"Metas a largo plazo con progreso y cuenta atrás (Alemán B2, Spagatt, Biblioteca y las que crees tú). Objetivos mensuales que puedes vincular a un hábito: cada registro suma +1 y se completan solos al llegar al número marcado. Para sumar progreso manual pulsa +."},
 
-  // === AGENDA ===
-  {page:"agenda",selector:'button[onclick="openTaskModal()"]',title:"📅 Nueva tarea",desc:"Crea una tarea única con un asistente paso a paso: 1) nombre; 2) hora (opcional) y prioridad (alta/media/baja); 3) veces al día con hora distinta para cada repetición y unidad opcional (ej. 'minutos'); 4) categoría y fecha; 5) notas. Puedes programarla para hoy o cualquier día futuro."},
-  {page:"agenda",selector:'button[onclick="openRecurringModal()"]',title:"🔁 Tarea recurrente",desc:"A diferencia de las tareas normales, una recurrente se repite sola: eliges qué días de la semana y a qué hora cada uno. La app crea automáticamente cada aparición los días que toca, 7 días hacia delante. Edítala o elimínala desde el propio item."},
-  {page:"agenda",selector:'button[onclick="openAgendaCatModal()"]',title:"🏷️ Categorías",desc:"Crea, renombra o elimina las categorías con las que clasificas tus tareas (Personal, Trabajo, Salud...). Si eliminas una categoría en uso, sus tareas se reasignan automáticamente a otra."},
-  {page:"agenda",selector:'#agendaFilterBtns',title:"🔍 Filtros",desc:"Filtra la vista por categoría. Pulsa 'Todas' para volver a ver todo. El filtro se mantiene mientras navegas por días."},
-  {page:"agenda",selector:'#agendaNextDayBtn',title:"➡️ Navegar días",desc:"Pulsa Siguiente → para ver las tareas de días futuros. Cuando estés en un día futuro aparecerá '← Hoy' para volver. No puedes ir al pasado: las tareas pasadas sin completar aparecen en la tarjeta roja 'Días anteriores'."},
-  {page:"agenda",selector:'#agendaTodayList',title:"✅ Marcar tareas",desc:"Cada tarea tiene 3 botones: ✓ (completar, +1 XP), ✕ (no realizada, -1 XP) y 📆 (posponer a otro día, -2 XP). Si la tarea tiene varias repeticiones verás +1/-1 en su lugar. Si la marcas por error, vuelve a pulsar y se devuelve el XP. La línea '▶ Ahora' marca en qué punto del día estás."},
-  {page:"agenda",selector:'#agendaUpcomingList',title:"📌 Próximos días",desc:"Todas las tareas programadas para días siguientes, agrupadas por fecha. Aquí ves de un vistazo lo que viene sin tener que navegar día a día."},
-  {page:"agenda",selector:'#agendaWeeklySummary',title:"📊 Resumen semanal",desc:"Cuántas tareas has completado esta semana respecto al total. Solo cuenta hasta hoy, no las futuras como pendientes."},
+  {page:"agenda",selector:'button[onclick="openTaskModal()"]',title:"📅 Nueva tarea",desc:"Asistente paso a paso: nombre; hora y prioridad; veces al día (con hora distinta por repetición y unidad opcional tipo 'minutos'); categoría y fecha; ¿es evento de varios días? (vacaciones, viaje, evento familiar → se pinta como banner en el horario); y notas. Para eliminar, usa 🗑️ en la tarea."},
+  {page:"agenda",selector:'button[onclick="openRecurringModal()"]',title:"🔁 Recurrente vs tarea normal",desc:"Una recurrente se repite sola: eliges días de la semana y hora para cada uno. La app crea cada aparición automáticamente. En una recurrente puedes 'Cambiar hora (solo este día)' sin afectar a los demás. En una tarea normal no tiene sentido, por eso ese botón solo sale en las recurrentes."},
+  {page:"agenda",selector:'#agendaTodayList',title:"✅ Marcar tareas",desc:"✓ completar (+1 XP), ✕ no realizada (-1 XP), 📆 posponer (-2 XP, se recuperan al completarla). Con varias repeticiones verás +1/-1. Si te equivocas, vuelve a pulsar y se devuelve el XP. La línea '▶ Ahora' marca dónde estás en el día. Las de días anteriores sin marcar salen en rojo arriba para que no se pierdan."},
+  {page:"agenda",selector:'#agendaWeeklySummary',title:"📊 Resumen semanal y navegación",desc:"Puedes navegar a días futuros con Siguiente → (no al pasado). El resumen semanal cuenta solo hasta hoy, no las futuras como pendientes. Filtra por categoría con los botones de arriba; el filtro se mantiene al cambiar de día."},
 
-  // === HÁBITOS CORE ===
-  {page:"agua",selector:null,title:"💧 Hidratación",desc:"Alcanza tu objetivo diario de litros antes de medianoche. Tienes CHECK POINTS: a ciertas horas debes haber bebido X litros acumulados. El nivel de hidratación decae con la hora hasta que cumplas el check point siguiente. Si un check point vence sin cumplirse, la planta muere (excepto el primer día). Puedes añadir o quitar registros con los botones rápidos; cada registro devuelve XP si lo borras."},
-  {page:"agua",selector:'#aguaCheckpointsList',title:"🚩 Check points",desc:"Aquí ves los check points de hoy: ✅ cumplido, 🎯 próximo objetivo, ⏳ pendiente, ⚠️ VENCIDO (la planta muere). Puedes configurar cuántos quieres, a qué hora y cuántos litros desde ⚙️ Ajustar."},
-  {page:"deporte",selector:'button[onclick="openSportSessionModal()"]',title:"💪 Registrar deporte",desc:"Asistente en 4 pasos: 1) categoría (Running, Gym, Natación, Yoga...); 2) fecha, minutos (mínimo 10), intensidad y km/ritmo si la categoría los registra; 3) notas; 4) resumen. Al guardar, Fuerza sube al 100% y ganas +12 XP. Puedes crear tus propias categorías desde '🏅 Categorías'."},
-  {page:"deporte",selector:'#sportWeeklyStatusCard',title:"📋 Esta semana",desc:"Muestra las sesiones de la semana y las categorías marcadas como obligatorias (deben cumplirse cada semana o no cuentan para la racha). Puedes marcar cualquier categoría como obligatoria desde 🏅 Categorías."},
-  {page:"deporte",selector:'canvas#deporteChart',title:"📈 Evolución",desc:"Gráfico de evolución de la categoría seleccionada. Puedes alternar entre ver KM o RITMO (min/km). Solo aparece si la categoría tiene km activados. El ritmo se calcula solo si rellenas km y minutos."},
-  {page:"sueno",selector:null,title:"😴 Sueño",desc:"Registra cada día las horas dormidas (horas + minutos). Si duermes menos del mínimo fatal, la planta muere AL INSTANTE. Si duermes por debajo del umbral de aviso varias noches seguidas, también muere por agotamiento crónico. Dormir el mínimo óptimo o más sube Energía al 100% y da +8 XP; dormir menos da +3 XP. Si te equivocas, pulsa '↩️ Deshacer hoy'."},
-  {page:"aleman",selector:null,title:"🧠 Alemán",desc:"Registra horas de estudio. Tienes una hoja de ruta A1→C2 con barras de progreso. La planta muere si no estudias durante X días (configurable). Desde ⚙️ Ajustar puedes cambiar tu nivel de partida (A1/A2/B1/B2/C1/C2) y las horas ya acumuladas antes de usar la app. Cada registro da +8 XP y sube Inteligencia al 100%."},
-  {page:"pasos",selector:null,title:"⚡ Pasos diarios",desc:"Registra pasos manualmente o con los atajos. Superar el objetivo (barra verde) sube Salud al 100%. Quedarte por debajo del mínimo (barra roja) mata a la planta. El botón '↩️ Deshacer hoy' borra todos los pasos del día. Cada 500 pasos = +1 XP."},
-  {page:"orden",selector:null,title:"🍃 Test del Orden",desc:"Cuestionario diario de sí/no sobre el orden de tu entorno. Cada pregunta es un toggle. Al enviarlo se calcula una puntuación sobre 10 y sube Tranquilidad al 100%. Es OBLIGATORIO: sin test, la planta muere al día siguiente. Puedes editar las preguntas desde ✏️ Editar preguntas."},
-  {page:"estiramientos",selector:null,title:"🧘 Estiramientos",desc:"Registra una sesión diaria con o sin medida de cm al suelo. La medida actualiza el progreso hacia el spagatt (0 cm al suelo). La planta muere si no los haces en el número de días configurado. La Elasticidad decae con las horas del día hasta que registres. Al registrar sube al 100% y +8 XP."},
-  {page:"lectura",selector:'button[onclick="openBookModal()"]',title:"📚 Añadir libro",desc:"Registra los libros que terminas con título, autor, género, valoración (1-5 estrellas), fecha y reseña opcional. Se guardan en tu biblioteca, donde puedes buscar por título/autor y filtrar por género. Cada sesión de lectura = +1 XP por cada 15 min. La planta muere si no lees en X días (configurable)."},
-  {page:"movil",selector:null,title:"📱 Tiempo de móvil",desc:"Registra las horas de pantalla de AYER. Si superas el mínimo fatal, la planta muere al instante. Si superas el umbral de aviso, penaliza Tranquilidad (-12% por cada hora extra). Es un obligatorio diario: si no lo registras, la planta muere al día siguiente. Puedes deshacer el registro de hoy con ↩️."},
+  {page:"horario",selector:null,title:"🗓️ Horario semanal",desc:"Vista tipo Google Calendar con bloques fijos (trabajo, clases...) y tareas con hora. Los eventos multi-día aparecen como banner arriba del día. Puedes hacer zoom con +/− o 'Ver todo' para la semana completa, navegar entre semanas con ←/→/Hoy, y la línea roja marca la hora actual."},
 
-  // === HÁBITOS CUSTOM ===
-  {page:"habitos-custom",selector:'button[onclick="openHabitModal()"]',title:"✨ Crear un hábito personalizado",desc:"Asistente en 10 pasos: 1) nombre + emoji; 2) ¿es de idioma? (si sí, la unidad será horas y verás hoja de ruta A1→C2); 3) unidad (hecho/no hecho, minutos, horas, km, cantidad, páginas, personalizado); 4) necesidad que alimenta (una de las 8 o una nueva custom); 5) frecuencia (diaria/semanal) y días sin hacer → muerte; 6) efecto al completar (sube al 100%, sube un % acumulable o fijo, baja un %, o solo registra); 7) importancia (obligatorio sí/no, XP por registro, mostrar en navegador); 8) funciones extra (racha, gráfico, estadísticas, notas, récord); 9) meta numérica opcional; 10) notas finales."},
-  {page:"habitos-custom",selector:'#customHabitsList',title:"📋 Mis hábitos",desc:"Aquí aparecen todos tus hábitos personalizados con su nivel de necesidad actual, racha y progreso de meta. Botones: ✅ registrar, 'Ver' para abrir la página de detalle, ✏️ editar. La página de detalle muestra estadísticas, gráfico de historial, meta, notas y los últimos registros."},
+  {page:"agua",selector:null,title:"💧 Agua y check points",desc:"Objetivo diario de litros con CHECK POINTS: a ciertas horas debes llevar X litros acumulados. El nivel decae hasta que cumplas el siguiente check point. Si uno vence sin cumplirse, la planta muere (excepto el primer día). Botones rápidos, cantidad custom o clic en los vasos. Todo se puede borrar con 🗑️ (devuelve XP)."},
+  {page:"deporte",selector:'button[onclick="openSportSessionModal()"]',title:"💪 Deporte",desc:"Sesión en 4 pasos: categoría, fecha/minutos/intensidad (+km/ritmo si aplica), notas y resumen. +12 XP y Fuerza al 100%. Puedes crear tus categorías desde 🏅 (con o sin km, obligatorias semanales o no). El gráfico alterna km/ritmo por categoría. Borrar sesión con 🗑️ devuelve los 12 XP."},
+  {page:"sueno",selector:null,title:"😴 Sueño",desc:"Registra cada día horas + minutos. Menos del mínimo fatal = muerte instantánea. Varias noches por debajo del umbral = agotamiento crónico, también muerte. Dormir el óptimo o más: +8 XP y Energía 100%; menos: +3 XP. '↩️ Deshacer hoy' si te equivocas."},
+  {page:"aleman",selector:null,title:"🧠 Alemán",desc:"Horas de estudio con hoja de ruta A1→C2. Muerte si no estudias en X días. Desde ⚙️ puedes cambiar nivel de partida y horas ya acumuladas antes de usar la app. +8 XP y Inteligencia al 100% por registro. Historial borrable con 🗑️."},
+  {page:"pasos",selector:null,title:"⚡ Pasos",desc:"Registro manual. Superar objetivo = verde, Salud 100%. Por debajo del mínimo = barra roja y muerte. Cada 500 pasos = +1 XP. '↩️ Deshacer hoy' borra todos los del día."},
+  {page:"orden",selector:null,title:"🍃 Test del Orden",desc:"Cuestionario diario sí/no. Al enviarlo: puntuación sobre 10 y Tranquilidad al 100%. OBLIGATORIO (sin test, muerte al día siguiente). Puedes editar/añadir/eliminar preguntas con ✏️. 'Rehacer test de hoy' si te equivocas."},
+  {page:"estiramientos",selector:null,title:"🧘 Estiramientos",desc:"Sesión diaria con o sin cm al suelo (actualiza el progreso al spagatt). Muerte si no los haces en X días. La Elasticidad decae con la hora hasta que registres. +8 XP y al 100%."},
+  {page:"lectura",selector:'button[onclick="openBookModal()"]',title:"📖 Lectura y biblioteca",desc:"Registra minutos con botones rápidos o custom. +1 XP por cada 15 min. Añade libros con título, autor, género, estrellas, fecha y reseña. La biblioteca filtra por género y busca por título/autor. Muerte si no lees en X días."},
+  {page:"movil",selector:null,title:"📱 Móvil",desc:"Registra las horas de pantalla de AYER. Superar el mínimo fatal = muerte instantánea. Superar el umbral de aviso penaliza Tranquilidad (-12% por hora extra). Es obligatorio diario: sin registro, muerte al día siguiente. '↩️ Deshacer' si te equivocas."},
 
-  // === EDITAR ===
-  {page:"editar",selector:null,title:"✏️ Editar — panel de control",desc:"Desde aquí ajustas TODA la app. Vamos a ver las zonas más importantes en detalle."},
-  {page:"editar",selector:'#editCoreHabitsList',title:"⚙️ Hábitos del sistema",desc:"Cada hábito core (agua, deporte, sueño...) tiene 3 botones: ⚙️ Parámetros para ajustar sus límites (objetivos, mínimos, días sin hacer → muerte, check points de agua, umbrales de sueño...); un botón para añadirlo/quitarlo de Pendientes obligatorios; y otro para desactivarlo por completo (su necesidad desaparece de la planta)."},
-  {page:"editar",selector:'#editCustomHabitsList',title:"✨ Hábitos personalizados",desc:"Lista de todos tus hábitos custom con botones ✏️ Editar y 🗑️ Eliminar. Al eliminar un hábito se borran también sus registros, su racha y su estado de necesidad."},
-  {page:"editar",selector:'#editNeedsSection',title:"🌿 Necesidades",desc:"Puedes editar el nombre e icono de CUALQUIER necesidad (incluso las 8 del sistema). Las necesidades del sistema no pueden cambiar de hábito, pero las nuevas sí. Puedes crear nuevas necesidades personalizadas vinculándolas a un hábito custom — varios hábitos pueden compartir la misma necesidad."},
-  {page:"editar",selector:'#editAppPagesList',title:"👁️ Pantallas visibles",desc:"Oculta las pantallas que no uses (bosque, motivación, corcho, cómo funciona). Desaparecerán del navegador lateral. Podrás restaurarlas pulsando '👁️ Mostrar' cuando quieras."},
-  {page:"editar",selector:'#editBuiltinGoalsList',title:"🏆 Metas predefinidas",desc:"Las 3 metas de fábrica (Alemán B2, Spagatt, Biblioteca). Para cada una puedes: '🙈 Ocultar de inicio' (sigue visible en la sección Metas) o '🗑️ Ocultar del todo' (desaparece y puedes restaurarla después)."},
-  {page:"editar",selector:'#editSportCatPreview',title:"🏅 Categorías de deporte",desc:"Gestiona las categorías: crear con emoji y nombre, activar/desactivar km y ritmo, marcar como obligatoria semanal, editar nombre/emoji y eliminar. Si eliminas una categoría en uso, sus sesiones se conservan en el historial pero sin categoría válida."},
-  {page:"editar",selector:'#editAgendaCatPreview',title:"🏷️ Categorías de agenda",desc:"Crea, renombra y elimina categorías. Si eliminas una en uso, sus tareas se reasignan a otra automáticamente."},
-  {page:"editar",selector:'#editGoalsList',title:"🎯 Tus metas personalizadas",desc:"Lista de todas las metas que has creado. Puedes editarlas o eliminarlas. Cada meta puede tener objetivo numérico, unidad, descripción, fecha límite y cuenta atrás (el % se calcula solo según días transcurridos)."},
-  {page:"editar",selector:'#editMonthlyObjsList',title:"📅 Objetivos mensuales",desc:"Todos tus objetivos mensuales. Puedes editarlos o eliminarlos. Recuerda que se pueden vincular a hábitos para que el progreso se actualice solo."},
-  {page:"editar",selector:'button[onclick="fullResetGameHard()"]',title:"⚠️ DANGER ZONE",desc:"El botón 'Reiniciar toda la app' borra TODO: hábitos, metas, libros, bosque, corcho, motivación, categorías... No hay vuelta atrás. Úsalo solo si quieres empezar de cero absoluto. Para reiniciar solo la planta (conservando tus datos), usa el botón rojo del Inicio."},
+  {page:"habitos-custom",selector:'button[onclick="openHabitModal()"]',title:"✨ Crear hábito personalizado",desc:"Asistente en 10 pasos: nombre+emoji; ¿de idioma? (unidad = horas + hoja de ruta A1→C2); unidad (hecho/no, minutos, horas, km, cantidad, páginas, custom); necesidad (una de las 8 o una nueva custom que pueden compartir varios hábitos); frecuencia y días sin hacer → muerte; efecto (sube 100%, sube %, baja %, o solo registra); obligatorio, XP y mostrar en nav; funciones extra (racha, gráfico, stats, notas, récord); meta numérica; notas finales."},
+  {page:"habitos-custom",selector:'#customHabitsList',title:"📋 Mis hábitos",desc:"Todos tus hábitos custom con su nivel de necesidad, racha y meta. Botones: ✅ registrar, Ver (detalle con stats, gráfico, meta y últimos registros) y ✏️ editar."},
 
-  // === PÁGINAS DE LA APP ===
-  {page:"bosque",selector:null,title:"🌳 Mi bosque",desc:"Cada planta que llega a nivel 8 se convierte en árbol y puedes plantarla aquí. En el prado, cada árbol tiene nombre, nivel, fecha de creación y fecha de plantación. TOCA un árbol para ver su nota (los recuerdos que guardaste al plantarlo). Puedes editar o eliminar la nota desde el propio tooltip. Si no usas la app más de 30 días, el bosque arde y pierdes todos los árboles."},
-  {page:"motivacion",selector:null,title:"🌟 Mi motivación",desc:"Tu espacio personal para recordar por qué empezaste. Tiene 3 secciones editables: '🪞 Quién quiero ser' (tu yo ideal en presente), '💬 Mis porqués' (razones para mejorar) y '🪜 Pasos a seguir' (plan concreto). Cada una se edita con ✏️ y se guarda al instante. Arriba verás tu racha actual y una frase motivacional distinta cada día."},
-  {page:"notas",selector:null,title:"📌 Mi corcho",desc:"Notas rápidas tipo post-it con colores. Pulsa '+ Nueva nota' para crear una; elige color, título y cuerpo. Toca una nota para expandirla si es larga, o usa ✏️ para editarla. Las notas se ordenan en una cuadrícula responsive (3 columnas en escritorio, 2 en móvil)."},
+  {page:"editar",selector:null,title:"✏️ Editar — panel de control",desc:"Aquí ajustas TODA la app. Vamos a lo importante."},
+  {page:"editar",selector:'#editCoreHabitsList',title:"⚙️ Hábitos del sistema",desc:"Cada hábito core (agua, deporte, sueño...): ⚙️ Parámetros (objetivos, mínimos, días sin hacer → muerte, check points de agua, umbrales de sueño...); añadir/quitar de Pendientes obligatorios; y desactivarlo por completo (su necesidad desaparece)."},
+  {page:"editar",selector:'#editCustomHabitsList',title:"✨ Hábitos personalizados",desc:"Edita o elimina tus hábitos custom. Al eliminar se borran también sus registros, racha y estado de necesidad."},
+  {page:"editar",selector:'#editNeedsSection',title:"🌿 Necesidades",desc:"Edita nombre e icono de CUALQUIER necesidad (incluidas las 8 del sistema). Las del sistema no cambian de hábito; las nuevas sí. Puedes crear necesidades nuevas vinculadas a hábitos custom — varios hábitos pueden compartir la misma."},
+  {page:"editar",selector:'#editAppPagesList',title:"👁️ Pantallas visibles",desc:"Oculta las que no uses (bosque, motivación, corcho, cómo funciona). Desaparecen del navegador lateral y puedes restaurarlas cuando quieras."},
+  {page:"editar",selector:'#editBuiltinGoalsList',title:"🏆 Metas predefinidas",desc:"Alemán B2, Spagatt y Biblioteca. Puedes '🙈 Ocultar de inicio' (sigue en Metas) o '🗑️ Ocultar del todo' (se puede restaurar después)."},
+  {page:"editar",selector:'#editSportCatPreview',title:"🏅 Categorías de deporte y agenda",desc:"Deporte: crear con emoji y nombre, activar km/ritmo, marcar como obligatoria semanal, editar y eliminar. Agenda: crear, renombrar y eliminar categorías (las tareas se reasignan si eliminas una en uso)."},
+  {page:"editar",selector:'#editGoalsList',title:"🎯 Metas y objetivos mensuales",desc:"Edita o elimina tus metas custom y objetivos mensuales. Recuerda que los mensuales pueden vincularse a hábitos para auto-progresar."},
+  {page:"editar",selector:'button[onclick="fullResetGameHard()"]',title:"⚠️ DANGER ZONE",desc:"'Reiniciar toda la app' borra TODO: hábitos, metas, libros, bosque, corcho, motivación, categorías... Para reiniciar solo la planta conservando datos, usa el botón rojo del Inicio."},
 
-  // === INFO ===
-  {page:"info",selector:'button[onclick="replayTutorial()"]',title:"❓ Cómo funciona",desc:"Consulta cualquier duda sobre las mecánicas. Y si quieres volver a ver este tutorial cuando quieras, pulsa este botón '▶️ Ver tutorial'. Aquí también encontrarás la sección 'Última nota de la autora'."},
-  {page:"info",selector:null,title:"🎓 Fin del tutorial",desc:"¡Ya has visto todo lo básico! Recuerda: cada acción cuenta, la constancia vence al talento, y hacer trampa solo marea a tu planta. Puedes repetir este tutorial cuando quieras desde Cómo funciona → '▶️ Ver tutorial'. ¡A cuidar esa planta! 🌱"}
+  {page:"bosque",selector:null,title:"🌳 Mi bosque",desc:"Cada planta nivel 8 se convierte en árbol y puedes plantarla aquí con un nombre y una nota (tus recuerdos). Toca un árbol para ver su tooltip: nombre, nivel, fecha de creación, fecha de plantación y nota (editable/borrable). Si no usas la app más de 30 días, el bosque arde. No contribuyas a los incendios forestales..."},
+  {page:"motivacion",selector:null,title:"🌟 Mi motivación",desc:"Tu espacio para recordar por qué empezaste. 3 secciones editables: '🪞 Quién quiero ser' (tu yo ideal en presente), '💬 Mis porqués' (razones para mejorar) y '🪜 Pasos a seguir' (plan concreto). Arriba, tu racha y una frase distinta cada día."},
+  {page:"notas",selector:null,title:"📌 Mi corcho",desc:"Post-its con colores. '+ Nueva nota' para crear; elige color, título y cuerpo. Toca una para expandirla si es larga, ✏️ para editar. Cuadrícula responsive (3 columnas escritorio, 2 móvil)."},
+
+  {page:"info",selector:'button[onclick="replayTutorial()"]',title:"❓ Cómo funciona",desc:"Aquí tienes toda la documentación: mecánicas, necesidades, obligatorios, protector, agenda, cada hábito, hábitos custom, metas, XP, bosque, edición... Y el botón '▶️ Ver tutorial' para repetir esto cuando quieras. También encontrarás la 'Última nota de la autora'."},
+  {page:"info",selector:null,title:"🎓 Fin del tutorial",desc:"¡Ya está! Recuerda: cada acción cuenta, la constancia vence al talento, y hacer trampa solo marea a tu planta. Esta web no es perfecta y hay muchas formas de hacer trampa — pero el objetivo es convertirnos en adultos funcionales (que ya es hora). ¡Cuida bien a tu planta y crece con ella! 🌱"}
 ];
 let tutorialIndex=0;
 
@@ -10140,6 +10360,7 @@ renderAll();
 renderPhoneChart();
 renderSleepChart();
 startDecay();
+if(notifSettings.enabled) startNotifChecker();
 // Arrancar tutorial la primera vez
 setTimeout(startWelcomeTutorial, 400);
 
