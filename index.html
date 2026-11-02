@@ -8366,7 +8366,7 @@ const width = `calc(${colWidth})`;
       if(t.wasPostponed) tags.push("📆");
       const tagStr=tags.join(" ");
       const timeLabel=t.endTime?`${t.time} – ${t.endTime}`:t.time;
-      const tinyClass = realH < 20 ? " tiny" : "";
+      const tinyClass = realH < 10 ? " tiny" : "";
       const failedClass = t.failed?" failed-block":"";
       const doneClass = t.done?" done":"";
 
