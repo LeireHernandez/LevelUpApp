@@ -2348,6 +2348,50 @@ textarea {
 .sched-head.today{ color:var(--green-dk); background:var(--green-mist); }
 .sched-head.today .sched-day-num{ color:#fff; background:var(--green-md); }
 
+@media(max-width:700px){
+  :root{ --sched-hour-h: 50px; }
+  .sched{ grid-template-columns: 46px repeat(7, minmax(170px, 1fr)); min-width: 1300px; }
+  .sched-head{ height:64px; }
+  .sched-head .sched-day-name{ font-size:.66rem; }
+  .sched-head .sched-day-sub{ font-size:.55rem; }
+  .sched-head .sched-day-num{ font-size:.92rem; }
+  .sched-corner{ height:64px; }
+
+  /* NUEVO: bloques en móvil un poco más altos y con más padding */
+  .sched-block{
+    min-height: 34px;
+    padding: 3px 6px;
+    font-size: .68rem;
+  }
+  .sched-block strong,
+  .sched-block .task-name{
+    font-size: .7rem;
+    line-height: 1.25;
+  }
+  .sched-block .sched-block-time,
+  .sched-block .task-time-line{
+    font-size: .6rem;
+  }
+
+  /* NUEVO: en móvil, el modo "tiny" solo para bloques MUY bajos (<20px) */
+  .sched-block.tiny{
+    min-height: 22px;
+    padding: 0 5px;
+  }
+}
+
+.sched-block.tiny .task-name,
+.sched-block.tiny strong{
+  flex:1 1 auto;
+  min-width:60px;              /* ← mínimo para que se lea algo */
+  font-size:.68rem;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+
+@media(max-width:700px){
+  .sched{ grid-template-columns: 46px repeat(7, minmax(150px, 1fr)); min-width: 1150px; }
+}
+
 </style>
 </head>
 <body>
@@ -7302,9 +7346,13 @@ function layoutOverlaps(items){
     result.push(it);
   });
 
-  const cols = Math.max(1, columns.length);
-  result.forEach(r=>r.cols=cols);
-  return result;
+const cols = Math.max(1, Math.min(3, columns.length));  // ← máximo 3 columnas
+result.forEach(r=>{
+  r.cols = cols;
+  // Si hay más columnas que el máximo, apilar los extras en la última columna
+  if(r.col > cols-1) r.col = cols-1;
+});
+return result;
 }
 
 
@@ -8307,15 +8355,18 @@ function renderSchedule(){
       const top = (s/60)*HOUR_PX;
 
       const gapPx=3;
-      const left = `calc(3px + ${colIdx} * ((100% - 6px - ${(cols-1)*gapPx}px) / ${cols}) + ${colIdx*gapPx}px)`;
-      const width = `calc((100% - 6px - ${(cols-1)*gapPx}px) / ${cols})`;
+const totalGap = (cols-1)*gapPx;
+const colWidth = `((100% - 6px - ${totalGap}px) / ${cols})`;
+const left = `calc(3px + ${colIdx} * (${colWidth} + ${gapPx}px))`;
+const width = `calc(${colWidth})`;
+
 
       const tags=[];
       if(t.recurringId) tags.push("🔁");
       if(t.wasPostponed) tags.push("📆");
       const tagStr=tags.join(" ");
       const timeLabel=t.endTime?`${t.time} – ${t.endTime}`:t.time;
-      const tinyClass = realH < 26 ? " tiny" : "";
+      const tinyClass = realH < 20 ? " tiny" : "";
       const failedClass = t.failed?" failed-block":"";
       const doneClass = t.done?" done":"";
 
@@ -9361,6 +9412,27 @@ const multiDayLabel=t.isMultiDay?` <span style="font-size:0.62rem;color:var(--bl
   </div>`;
 }
 
+function skipRecurringDay(recurringId, dateStr, taskId){
+  if(!recurringId || !dateStr) return;
+  const rec = recurringTasks.find(r => r.id === recurringId);
+  if(!rec) return;
+
+  if(!confirm(`¿Ocultar esta tarea recurrente solo el día ${dateStr}? La recurrente seguirá activa para el resto de días.`)) return;
+
+  // 1) Registrar la fecha como saltada en la recurrente
+  rec.skippedDates = rec.skippedDates || [];
+  if(!rec.skippedDates.includes(dateStr)) rec.skippedDates.push(dateStr);
+
+  // 2) Borrar la tarea concreta de la agenda (sin devolver XP, porque no se completó)
+  agendaTasks = agendaTasks.filter(t => t.id !== taskId);
+
+  // 3) Guardar y re-renderizar
+  save();
+  renderAgenda();
+  renderSchedule();
+  toast(`🚫 Día ${dateStr} ocultado para "${rec.name}"`);
+}
+
 
 function openTaskMenu(id,btn){
   // Cerrar cualquier menú previo
@@ -9368,15 +9440,16 @@ function openTaskMenu(id,btn){
   const t=agendaTasks.find(x=>x.id===id);if(!t)return;
   const isRecurring=!!t.recurringId;
 
-  const items=[
-    {icon:"🕐",label:"Cambiar hora de hoy",action:`changeTaskTime('${t.id}')`,show:isRecurring},
-    {icon:"➕",label:"Añadir check",action:`addTaskCheck('${t.id}')`,show:true},
-    {icon:"📆",label:"Posponer a otro día (-2XP)",action:`postponeTask('${t.id}')`,show:!t.done&&!t.failed},
-    {icon:"✏️",label:isRecurring?"Editar tarea recurrente":"Editar tarea",action:isRecurring?`openRecurringModal('${t.recurringId}')`:`openTaskModal('${t.id}')`,show:true},
-    {icon:"🗑️",label:isRecurring?"Eliminar recurrente":"Eliminar tarea",action:isRecurring
-      ?`deleteRecurringTaskFromAgenda('${t.recurringId}')`
-      :`deleteTask('${t.id}')`,show:true,danger:true}
-  ].filter(i=>i.show);
+const items=[
+  {icon:"🕐",label:"Cambiar hora de hoy",action:`changeTaskTime('${t.id}')`,show:isRecurring},
+  {icon:"➕",label:"Añadir check",action:`addTaskCheck('${t.id}')`,show:true},
+  {icon:"📆",label:"Posponer a otro día (-2XP)",action:`postponeTask('${t.id}')`,show:!t.done&&!t.failed},
+  {icon:"✏️",label:isRecurring?"Editar tarea recurrente":"Editar tarea",action:isRecurring?`openRecurringModal('${t.recurringId}')`:`openTaskModal('${t.id}')`,show:true},
+  {icon:"🚫",label:"Ocultar solo este día",action:`skipRecurringDay('${t.recurringId}','${t.date}','${t.id}')`,show:isRecurring,danger:true},
+  {icon:"🗑️",label:isRecurring?"Eliminar recurrente":"Eliminar tarea",action:isRecurring
+    ?`deleteRecurringTaskFromAgenda('${t.recurringId}')`
+    :`deleteTask('${t.id}')`,show:true,danger:true}
+].filter(i=>i.show);
 
   const menu=document.createElement("div");
   menu.id="taskContextMenu";
@@ -9858,6 +9931,8 @@ function generateRecurringForWeek(){
       const dayNum=d.getDay();
       if(!(r.days||[]).includes(dayNum))continue;
       const dateStr=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      // Saltar los días que el usuario ha ocultado manualmente
+if((r.skippedDates||[]).includes(dateStr)) continue;
       const alreadyExists=agendaTasks.find(t=>t.recurringId===r.id&&t.date===dateStr);
       if(alreadyExists)continue;
 
