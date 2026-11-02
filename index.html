@@ -8222,9 +8222,10 @@ function changeScheduleZoom(dir){
 function applyScheduleZoom(){
   const grid=document.getElementById("scheduleGrid");
   if(!grid) return;
-  // Zoom afecta SOLO a la altura por hora (no a fuentes ni escala global)
-  const baseHourPx = window.innerWidth<700 ? 48 : 56;
-  const hourPx = Math.round(baseHourPx * scheduleZoom);
+  
+  // Base = altura óptima calculada (no un valor fijo)
+  const baseOptimal = calcOptimalHourHeight();
+  const hourPx = Math.round(baseOptimal * scheduleZoom);
   grid.style.setProperty("--sched-hour-h", hourPx+"px");
   grid.style.setProperty("--sched-zoom", "1");
   const lbl=document.getElementById("scheduleZoomLabel");
@@ -8241,9 +8242,84 @@ function getSchedCatColor(cat){
   return SCHED_CAT_COLORS[cat] || {bg:"#e0e0e0", border:"#9e9e9e"};
 }
 
+// Calcula la altura óptima por hora para que todas las tareas del horario se vean bien
+function calcOptimalHourHeight(){
+  const MIN_HOUR_PX = 40;   // mínimo absoluto (nada más bajo, sería ilegible)
+  const MAX_HOUR_PX = 80;   // máximo absoluto (nada más alto, sería un scroll eterno)
+  const BASE_HOUR_PX = window.innerWidth < 700 ? 50 : 56;  // base actual
+
+  // 1) Altura mínima para que la tarea más corta se vea con nombre + hora
+  //    Una tarea de N minutos ocupa (N/60)*hourPx. Queremos que la más corta
+  //    ocupe al menos 28px (nombre + hora compactos).
+  const mon = getScheduleMonday();
+  const dk = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const toMin = s => {const [h,m]=s.split(":").map(Number);return h*60+m;};
+
+  const weekDates = [];
+  for(let i=0;i<7;i++){
+    const d = new Date(mon); d.setDate(mon.getDate()+i);
+    weekDates.push(dk(d));
+  }
+
+  // Duraciones de las tareas de esta semana (en minutos)
+  const durations = [];
+  (agendaTasks||[]).forEach(t=>{
+    if(!t.time || t.isMultiDay || !weekDates.includes(t.date)) return;
+    const s = toMin(t.time);
+    const e = t.endTime ? toMin(t.endTime) : s + 60;
+    if(e > s) durations.push(e - s);
+  });
+
+  // Si hay tareas, calcular la altura mínima para que la más corta quepa con 2 líneas
+  let minForShortest = MIN_HOUR_PX;
+  if(durations.length){
+    const shortest = Math.min(...durations);       // minutos
+    const desiredPx = 28;                          // queremos 28px para la más corta
+    minForShortest = Math.ceil((60 / shortest) * desiredPx);
+    // Cap a un máximo razonable para no explotar
+    minForShortest = Math.min(minForShortest, MAX_HOUR_PX);
+  }
+
+  // 2) Altura según la densidad de tareas del día más cargado
+  //    Si un día tiene muchas tareas solapadas o seguidas, subimos un poco
+  let maxTasksPerDay = 0;
+  weekDates.forEach(date=>{
+    const count = (agendaTasks||[]).filter(t=>t.date===date && t.time && !t.isMultiDay).length;
+    if(count > maxTasksPerDay) maxTasksPerDay = count;
+  });
+  // 0-3 tareas → base, 4-6 → base+6, 7-10 → base+12, >10 → base+20
+  let densityBonus = 0;
+  if(maxTasksPerDay > 10) densityBonus = 20;
+  else if(maxTasksPerDay > 6) densityBonus = 12;
+  else if(maxTasksPerDay > 3) densityBonus = 6;
+
+  // 3) Altura según el espacio disponible en pantalla
+  //    Queremos que quepan al menos ~10h visibles sin scroll (o lo que permita el viewport)
+  const mainEl = document.querySelector("main");
+  const viewportH = mainEl ? mainEl.clientHeight : window.innerHeight;
+  const idealVisibleHours = 12;  // queremos ver 12h de un vistazo
+  const idealFromViewport = Math.floor((viewportH * 0.7) / idealVisibleHours);
+
+  // 4) Combinar: cogemos el mayor entre base, minForShortest, idealFromViewport y densityBonus
+  let result = Math.max(
+    BASE_HOUR_PX,
+    minForShortest,
+    Math.min(idealFromViewport, MAX_HOUR_PX)
+  ) + densityBonus;
+
+  // Aplicar límites absolutos
+  result = Math.max(MIN_HOUR_PX, Math.min(MAX_HOUR_PX, result));
+
+  return result;
+}
+
 function renderSchedule(){
   const el=document.getElementById("scheduleGrid");
   if(!el) return;
+
+    // Calcular altura óptima por hora y aplicarla como CSS variable
+  const optimalHourPx = calcOptimalHourHeight();
+  el.style.setProperty("--sched-hour-h", optimalHourPx + "px");
 
   const order=[1,2,3,4,5,6,0];
   const dayNames=["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
@@ -8395,7 +8471,7 @@ const width = `calc(${colWidth})`;
   });
 
   el.innerHTML=html;
-  applyScheduleZoom();
+
 
   // ---------- Leyenda dinámica ----------
   const legend=document.getElementById("scheduleLegend");
