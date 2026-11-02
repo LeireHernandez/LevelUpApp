@@ -2400,6 +2400,32 @@ textarea {
   flex-shrink:0;
   width:100%;
 }
+.sched-block{
+  position:absolute;
+  border-radius:6px;
+  padding:2px 5px;
+  font-size:.68rem;
+  overflow:hidden;
+  color:#1a1208;
+  line-height:1.15;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-start;
+  gap:0;
+  cursor:pointer;
+  min-height:0;              /* ← CLAVE: sin mínimo, la altura la pone el JS */
+  z-index:2;
+  border-left:4px solid rgba(0,0,0,.25);
+  box-shadow:0 1px 3px rgba(0,0,0,.12);
+  transition:box-shadow .12s, filter .12s;
+  box-sizing:border-box;     /* ← que el padding no sume a la altura */
+}
+
+.sched-block{
+  min-height: 0;
+  padding: 2px 5px;
+  font-size: .68rem;
+}
 
 
 @media(max-width:700px){
@@ -3224,7 +3250,7 @@ textarea {
         </div>
           </div>
         </div>
-        <h3 style="font-size:0.72rem;color:var(--text3);margin-bottom:0.75rem;text-transform:uppercase;letter-spacing:0.08em">Necesidades · Toca para ir al hábito</h3>
+        <h3 style="font-size:0.72rem;color:var(--text3);margin-bottom:0.75rem;text-transform:uppercase;letter-spacing:0.08em">NecesidadesLeire · Toca para ir al hábito</h3>
         <div class="needs-grid" id="homeNeedsGrid"></div>
       </div>
       <div class="card" id="pendientesCard" style="display:none;margin-top:1.1rem">
@@ -8504,7 +8530,7 @@ function renderSchedule(){
         ? getSchedCatColor(t.category)
         : {bg:"#e8e8e8", border:"#9e9e9e", text:"#212121"};
 
-      const showName = h >= 16;
+      const showName = h >= 10;
       const showTime = h >= 28;
 
       col+=`<div class="sched-block sched-task${doneClass}${failedClass}"
