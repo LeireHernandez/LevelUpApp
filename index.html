@@ -3224,7 +3224,7 @@ textarea {
         </div>
           </div>
         </div>
-        <h3 style="font-size:0.72rem;color:var(--text3);margin-bottom:0.75rem;text-transform:uppercase;letter-spacing:0.08em">Necesidades · Toca para ir al hábito</h3>
+        <h3 style="font-size:0.72rem;color:var(--text3);margin-bottom:0.75rem;text-transform:uppercase;letter-spacing:0.08em">NecesidadesLeire · Toca para ir al hábito</h3>
         <div class="needs-grid" id="homeNeedsGrid"></div>
       </div>
       <div class="card" id="pendientesCard" style="display:none;margin-top:1.1rem">
@@ -8371,7 +8371,7 @@ function renderSchedule(){
   const el=document.getElementById("scheduleGrid");
   if(!el) return;
 
-  // Aplicar zoom (altura y anchura de columnas)
+  // Aplicar zoom (altura de hora y anchura de columnas)
   applyScheduleZoom();
   const HOUR_PX = parseFloat(getComputedStyle(el).getPropertyValue("--sched-hour-h")) || 56;
 
@@ -8395,7 +8395,7 @@ function renderSchedule(){
   const now=new Date();
   const nowMin=now.getHours()*60+now.getMinutes();
 
-  // ---------- Cabecera (como antes) ----------
+  // ---------- Cabecera ----------
   let html=`<div class="sched-corner"></div>`;
   order.forEach((d,i)=>{
     const dt=new Date(mon);dt.setDate(mon.getDate()+i);
@@ -8436,29 +8436,27 @@ function renderSchedule(){
       </div>`;
     });
 
-    const HOUR_PX = parseFloat(getComputedStyle(el).getPropertyValue("--sched-hour-h"))||56;
-    const MIN_H_PX = 34;
-
     // ---- Bloques fijos semanales ----
     weeklyBlocks.filter(b=>(b.days||[]).includes(d)).forEach(b=>{
       const s=toMin(b.start), e=toMin(b.end);
       if(e<=s) return;
       const pxTop=(s/60)*HOUR_PX;
       const pxH=((e-s)/60)*HOUR_PX;
-      const realH = Math.max(pxH, MIN_H_PX);
+      const realH = Math.max(2, pxH);
 
-      // Si el bloque tiene categoría → color de esa categoría.
-      // Si no → su color propio, o gris neutro si tampoco tiene.
       const catCol = b.category
         ? getSchedCatColor(b.category)
         : {bg: b.color||"#cfd8dc", border:"#90a4ae", text:"#263238"};
 
+      const showName = realH >= 16;
+      const showTime = realH >= 30;
+
       col+=`<div class="sched-block"
-        style="top:${pxTop}px;height:${realH}px;left:3px;right:3px;background:${catCol.bg};border-left-color:${catCol.border};color:${catCol.text}"
+        style="top:${pxTop}px;height:${realH}px;left:3px;right:3px;background:${catCol.bg};border-left-color:${catCol.border};color:${catCol.text};overflow:hidden"
         onclick="openBlockModal('${b.id}')"
         title="${b.name} (${b.start}–${b.end})">
-        <strong>${b.name}</strong>
-        <span class="sched-block-time">${b.start} – ${b.end}</span>
+        ${showName ? `<strong>${b.name}</strong>` : ""}
+        ${showTime ? `<span class="sched-block-time">${b.start} – ${b.end}</span>` : ""}
       </div>`;
     });
 
@@ -8473,23 +8471,17 @@ function renderSchedule(){
       })
       .filter(x=>x.e>x.s);
 
-    const MIN_VISUAL_MIN = (MIN_H_PX/HOUR_PX)*60;
-    const visualItems = rawTasks.map(r=>({...r, ve: Math.max(r.e, r.s + MIN_VISUAL_MIN)}));
-    const laid = layoutOverlaps(visualItems);
+    const laid = layoutOverlaps(rawTasks);
 
-    laid.forEach((item, idx)=>{
-      const orig = rawTasks[idx];
-      const {t,s,col:colIdx,cols} = item;
-      const realH = ((orig.e-orig.s)/60)*HOUR_PX;
-      const h = Math.max(realH, MIN_H_PX);
-      const top = (s/60)*HOUR_PX;
-
+    laid.forEach((item)=>{
+      const {t, s, e, col: colIdx, cols} = item;
+      const top = (s/60) * HOUR_PX;
+      const h = Math.max(2, ((e - s)/60) * HOUR_PX);
       const gapPx=3;
-const totalGap = (cols-1)*gapPx;
-const colWidth = `((100% - 6px - ${totalGap}px) / ${cols})`;
-const left = `calc(3px + ${colIdx} * (${colWidth} + ${gapPx}px))`;
-const width = `calc(${colWidth})`;
-
+      const totalGap = (cols-1)*gapPx;
+      const colWidth = `((100% - 6px - ${totalGap}px) / ${cols})`;
+      const left = `calc(3px + ${colIdx} * (${colWidth} + ${gapPx}px))`;
+      const width = `calc(${colWidth})`;
 
       const tags=[];
       if(t.recurringId) tags.push("🔁");
@@ -8500,18 +8492,19 @@ const width = `calc(${colWidth})`;
       const failedClass = t.failed?" failed-block":"";
       const doneClass = t.done?" done":"";
 
-      // Si la tarea no tiene categoría → color neutro (no "Trabajo")
       const catCol = t.category
         ? getSchedCatColor(t.category)
         : {bg:"#e8e8e8", border:"#9e9e9e", text:"#212121"};
 
+      const showName = h >= 16;
+      const showTime = h >= 28;
+
       col+=`<div class="sched-block sched-task${doneClass}${failedClass}"
-        style="top:${top}px;height:${h}px;left:${left};width:${width};background:${catCol.bg};border-color:${catCol.border};border-left-color:${catCol.border};color:${catCol.text}"
+        style="top:${top}px;height:${h}px;left:${left};width:${width};background:${catCol.bg};border-color:${catCol.border};border-left-color:${catCol.border};color:${catCol.text};overflow:hidden"
         onclick="event.stopPropagation();openTaskMenu('${t.id}',this)"
         title="${timeLabel} · ${t.name}${t.category?" · "+t.category:""}">
-        <span class="task-name">${t.name}${tagStr?" "+tagStr:""}</span>
-        <span class="task-time-line">${timeLabel}</span>
-       
+        ${showName ? `<span class="task-name">${t.name}${tagStr?" "+tagStr:""}</span>` : ""}
+        ${showTime ? `<span class="task-time-line">${timeLabel}</span>` : ""}
       </div>`;
     });
 
@@ -8525,7 +8518,6 @@ const width = `calc(${colWidth})`;
   });
 
   el.innerHTML=html;
-
 
   // ---------- Leyenda dinámica ----------
   const legend=document.getElementById("scheduleLegend");
@@ -8591,7 +8583,7 @@ function layoutOverlaps(items){
   sorted.forEach(it=>{
     let placed=false;
     for(let c=0;c<columns.length;c++){
-      if(columns[c]<=it.s){ columns[c]=it.e; it.col=c; placed=true; break; }
+      if(columns[c] <= it.s){ columns[c]=it.e; it.col=c; placed=true; break; }
     }
     if(!placed){ it.col=columns.length; columns.push(it.e); }
     result.push(it);
