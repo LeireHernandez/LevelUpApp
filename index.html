@@ -4183,15 +4183,44 @@ let _notifCheckTimer = null;
 let _sentNotifsToday = new Set(); // evita duplicados en el mismo día
 
 // --- Helpers de notificaciones ---
+// --- Helpers de notificaciones (persistente por día) ---
+const NOTIF_SENT_STORAGE_KEY = "levelup_notif_sent";
+
+function loadNotifSentSet(){
+  try{
+    const raw = localStorage.getItem(NOTIF_SENT_STORAGE_KEY);
+    if(!raw) return new Set();
+    const data = JSON.parse(raw);
+    // Estructura: { date: "YYYY-MM-DD", keys: ["suffix1","suffix2",...] }
+    if(data && data.date === getTodayKey()){
+      return new Set(data.keys || []);
+    }
+    return new Set();
+  }catch(e){ return new Set(); }
+}
+function saveNotifSentSet(){
+  try{
+    const data = {
+      date: getTodayKey(),
+      keys: [..._sentNotifsToday]
+    };
+    localStorage.setItem(NOTIF_SENT_STORAGE_KEY, JSON.stringify(data));
+  }catch(e){}
+}
+
 function todayNotifKey(suffix){
   return getTodayKey()+"_"+suffix;
 }
 function wasNotifSent(suffix){
-  return _sentNotifsToday.has(todayNotifKey(suffix));
+  return _sentNotifsToday.has(suffix);
 }
 function markNotifSent(suffix){
-  _sentNotifsToday.add(todayNotifKey(suffix));
+  _sentNotifsToday.add(suffix);
+  saveNotifSentSet();
 }
+
+
+
 async function sendLocalNotification(title, body){
   try{
     if(window.Capacitor?.Plugins?.LocalNotifications){
@@ -11063,6 +11092,7 @@ if("serviceWorker" in navigator){
 
 // INIT
 load();
+_sentNotifsToday = loadNotifSentSet();
 updateNotifToggleUI();
 applyDecay();
 updateAllLevels();
