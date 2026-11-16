@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@300;400;500&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 :root {
@@ -2428,8 +2428,36 @@ textarea {
 }
 
 
+/* ---- Notas más elegantes ---- */
+.cork-note{ font-family:'Cormorant Garamond',serif; font-size:1rem; line-height:1.45; }
+.cork-note-title{ font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:600; font-size:1.18rem; line-height:1.2; margin-bottom:.4rem; letter-spacing:.01em; }
+.cork-note-body{ font-family:'Cormorant Garamond',serif; font-size:1.05rem; font-weight:500; line-height:1.5; color:#3a2d1a; }
+.cork-note-date{ font-family:'Cormorant Garamond',serif; font-style:italic; font-size:.8rem; }
+
+/* ---- Tareas: botones siempre en la misma fila ---- */
+.task-item{ flex-wrap:nowrap !important; overflow:visible !important; }
+.task-item > *{ flex-shrink:0; }
+.task-item > .task-name-wrap{ flex:1 1 0; min-width:0; flex-shrink:1; }
+.task-item .task-name{ word-break:break-word; }
+.task-item .task-category{ max-width:72px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
 @media(max-width:700px){
   .sched{ grid-template-columns: 46px repeat(7, minmax(150px, 1fr)); min-width: 1150px; }
+}
+
+/* Necesidad a 0% el primer día (no muere) */
+.need-item.grace-zero{opacity:.6;filter:grayscale(1);}
+.need-item.grace-zero::before{background:#9e9e9e;}
+.grace-note{font-size:.62rem;color:var(--text3);margin-top:5px;line-height:1.3;}
+
+.sched-block.sched-task.done{ color:#555 !important; }
+.sched-block.sched-task.failed-block{ color:var(--red) !important; }
+
+/* El título hereda el color del bloque (blanco si el fondo es oscuro) */
+.sched-block.sched-task .task-name,
+.sched-block.sched-task .task-details,
+.sched-block strong{
+  color:inherit;
 }
 
 </style>
@@ -2690,8 +2718,9 @@ textarea {
     <hr style="border:none;border-top:1px solid var(--border);margin:1rem 0">
     <p style="font-size:0.78rem;font-weight:500;color:var(--text2);margin-bottom:0.8rem">Nueva categoría</p>
     <div class="form-row">
-      <div class="form-group" style="flex:1"><label>Nombre</label><input type="text" id="newAgendaCatName" placeholder="Ej: Familia..." maxlength="20"></div>
-    </div>
+  <div class="form-group"><label>Nombre</label><input type="text" id="newAgendaCatName" placeholder="Ej: Familia..." maxlength="20"></div>
+  <div class="form-group"><label>Color</label><input type="color" id="newAgendaCatColor" value="#d1c4e9" style="padding:2px;height:38px;cursor:pointer"></div>
+</div>
     <button class="btn btn-sm" onclick="addAgendaCategory()">+ Añadir</button>
     <div class="modal-footer"><button class="btn btn-secondary btn-sm" onclick="closeAgendaCatModal()">Cerrar</button></div>
   </div>
@@ -3339,6 +3368,7 @@ textarea {
   </div>
   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:1.2rem;align-items:center">
     <button class="btn btn-blue btn-sm" onclick="openBlockModal()">+ Nuevo bloque</button>
+    <button class="btn btn-secondary btn-sm" onclick="openAgendaCatModal()">Colores</button>
     <button class="btn btn-secondary btn-sm" onclick="navigateTo('agenda')">← Agenda</button>
 
     <!-- Zoom -->
@@ -4208,6 +4238,29 @@ function saveNotifSentSet(){
   }catch(e){}
 }
 
+function openCustomModal(title, html, onSave){
+  let ov = document.getElementById('customModal');
+  if(!ov){
+    ov = document.createElement('div');
+    ov.id = 'customModal';
+    ov.className = 'modal-overlay';
+    ov.innerHTML = `<div class="modal"><h3 id="customModalTitle"></h3>
+      <div id="customModalBody"></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('customModal').classList.remove('open')">Cancelar</button>
+        <button class="btn btn-sm" id="customModalSave">Guardar</button>
+      </div></div>`;
+    document.body.appendChild(ov);
+    ov.addEventListener("click",(e)=>{if(e.target===ov)ov.classList.remove("open");});
+  }
+  document.getElementById('customModalTitle').textContent = title;
+  document.getElementById('customModalBody').innerHTML = html;
+  document.getElementById('customModalSave').onclick = ()=>{
+    if(onSave() !== false) ov.classList.remove('open');
+  };
+  ov.classList.add('open');
+}
+
 function todayNotifKey(suffix){
   return getTodayKey()+"_"+suffix;
 }
@@ -4220,13 +4273,22 @@ function markNotifSent(suffix){
 }
 
 
+let _notifSetDate = getTodayKey();
+function resetNotifCacheIfNeeded(){
+  const k = getTodayKey();
+  if(_notifSetDate !== k){
+    _sentNotifsToday.clear();
+    _notifSetDate = k;
+    saveNotifSentSet();
+  }
+}
 
-async function sendLocalNotification(title, body){
+async function sendLocalNotification(title, body, tag){
   try{
     if(window.Capacitor?.Plugins?.LocalNotifications){
       await window.Capacitor.Plugins.LocalNotifications.schedule({
         notifications:[{
-          id: strId(title+body+Date.now()),
+          id: strId((tag||title)+Date.now()),
           title, body,
           schedule:{ at:new Date(Date.now()+1000), allowWhileIdle:true }
         }]
@@ -4234,11 +4296,85 @@ async function sendLocalNotification(title, body){
       return;
     }
     if("Notification" in window && Notification.permission==="granted"){
-      const reg=await navigator.serviceWorker?.ready;
-      if(reg) reg.showNotification(title,{ body, icon:"icon-192.png" });
-      else new Notification(title,{ body, icon:"icon-192.png" });
+      const opts = { body, icon:"icon-192.png", tag: tag||title };
+      const reg = await navigator.serviceWorker?.ready;
+      if(reg) reg.showNotification(title, opts);
+      else new Notification(title, opts);
     }
   }catch(e){ console.warn("[notif]", e); }
+}
+
+function runNotifChecks(){
+  if(!notifSettings.enabled) return;
+  if(!("Notification" in window) || Notification.permission!=="granted") return;
+  resetNotifCacheIfNeeded();
+
+  const now = new Date();
+  const nowMin = now.getHours()*60 + now.getMinutes();
+
+  // 1) Necesidades: UNA sola vez al bajar del umbral. Se rearma si vuelve a subir por encima.
+  const threshold = notifSettings.lowNeedPercent || 10;
+  getAllNeeds().forEach(n=>{
+    const val = needValue(n.id);
+    const key = "low_"+n.id;
+    if(val > threshold){
+      if(_sentNotifsToday.delete(key)) saveNotifSentSet();
+      return;
+    }
+    if(val <= 0 || wasNotifSent(key)) return;
+    markNotifSent(key);
+    sendLocalNotification(
+      `🌱 ${plant.name} — ${n.name} al ${Math.round(val)}%`,
+      `Tu planta necesita ${n.name.toLowerCase()} urgente. Entra en LevelUp antes de que sea tarde.`,
+      key
+    );
+  });
+
+  // 2) Recordatorio de hábitos diarios
+  if(notifSettings.dailyHabitHour){
+    const [h,m] = notifSettings.dailyHabitHour.split(":").map(Number);
+    const targetMin = h*60+m;
+    if(nowMin >= targetMin && nowMin < targetMin+10 && !wasNotifSent("dailyPending")){
+      const pendingHabits = customHabits.filter(hb=>{
+        if(hb.freq!=="daily") return false;
+        return !(habitLogs[hb.id]||[]).some(l=>l.date===getTodayKey());
+      });
+      const pendingCore = getPendientes();
+      const total = pendingHabits.length + pendingCore.filter(p=>!p.customId).length;
+      if(total>0){
+        markNotifSent("dailyPending");
+        sendLocalNotification(`⏰ Quedan ${total} pendientes hoy`,
+          `Aún tienes hábitos obligatorios sin completar. La planta muere si no los haces.`, "dailyPending");
+      }
+    }
+  }
+
+  // 3) Check point de agua
+  if(notifSettings.waterCheckpoint && plant.alive && !isDisabledCore('agua')){
+    (coreParams.agua.checkpoints||[]).forEach(cp=>{
+      const [ch,cm] = cp.time.split(":").map(Number);
+      const minsLeft = ch*60+cm - nowMin;
+      if(minsLeft>0 && minsLeft<=20 && hydration.loggedToday < cp.liters){
+        const key = "wcp_"+cp.time;
+        if(!wasNotifSent(key)){
+          markNotifSent(key);
+          const remaining = (cp.liters - hydration.loggedToday).toFixed(2);
+          sendLocalNotification(`💧 Check point en ${minsLeft} min`,
+            `A las ${cp.time} debes haber bebido ${cp.liters}L. Te faltan ${remaining}L.`, key);
+        }
+      }
+    });
+  }
+
+  // 4) Matutina
+  if(notifSettings.morningMotivation && notifSettings.morningHour){
+    const [mh,mm] = notifSettings.morningHour.split(":").map(Number);
+    const targetMin = mh*60+mm;
+    if(nowMin >= targetMin && nowMin < targetMin+10 && !wasNotifSent("morning")){
+      markNotifSent("morning");
+      sendLocalNotification(`🌿 Buenos días, ${plant.name}`, getDailyQuote(), "morning");
+    }
+  }
 }
 
 // Comprueba cada minuto si hay que lanzar notificaciones de las configuradas
@@ -4247,89 +4383,7 @@ function startNotifChecker(){
   _notifCheckTimer = setInterval(runNotifChecks, 60000);
   runNotifChecks(); // ejecutar al arrancar
 }
-function resetNotifCacheIfNeeded(){
-  // Limpia el set si es de otro día
-  const anyKey = [..._sentNotifsToday][0];
-  if(anyKey && !anyKey.startsWith(getTodayKey())){
-    _sentNotifsToday.clear();
-  }
-}
-function runNotifChecks(){
-  if(!notifSettings.enabled) return;
-  if(!("Notification" in window) || Notification.permission!=="granted") return;
-  resetNotifCacheIfNeeded();
 
-  const now = new Date();
-  const nowMin = now.getHours()*60 + now.getMinutes();
-  const hhmmNow = `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
-
-  // --- 1) Necesidades por debajo del umbral ---
-  const threshold = notifSettings.lowNeedPercent || 10;
-  const needs = getAllNeeds();
-  needs.forEach(n=>{
-    const val = needValue(n.id);
-    if(val <= threshold && val > 0){
-      const key = "low_"+n.id;
-      if(!wasNotifSent(key)){
-        markNotifSent(key);
-        sendLocalNotification(`🌱 ${plant.name} — ${n.name} al ${Math.round(val)}%`,
-          `Tu planta necesita ${n.name.toLowerCase()} urgente. Entra en LevelUp antes de que sea tarde.`);
-      }
-    }
-  });
-
-  // --- 2) Hábitos diarios al final del día ---
-  if(notifSettings.dailyHabitHour){
-    const [h,m] = notifSettings.dailyHabitHour.split(":").map(Number);
-    const targetMin = h*60+m;
-    if(nowMin >= targetMin && nowMin < targetMin+10){
-      // Solo hábitos custom obligatorios o diarios pendientes
-      const pendingHabits = customHabits.filter(h=>{
-        if(h.freq!=="daily") return false;
-        const logs = (habitLogs[h.id]||[]).filter(l=>l.date===getTodayKey());
-        return logs.length===0;
-      });
-      // Pendientes de sistema (obligatorios no hechos)
-      const pendingCore = getPendientes();
-      const total = pendingHabits.length + pendingCore.filter(p=>!p.customId).length;
-      if(total>0 && !wasNotifSent("dailyPending")){
-        markNotifSent("dailyPending");
-        sendLocalNotification(`⏰ Quedan ${total} pendientes hoy`,
-          `Aún tienes hábitos obligatorios sin completar. La planta muere si no los haces.`);
-      }
-    }
-  }
-
-  // --- 3) Agua: check point próximo ---
-  if(notifSettings.waterCheckpoint && plant.alive && !isDisabledCore('agua')){
-    const cps = (coreParams.agua.checkpoints||[]);
-    cps.forEach(cp=>{
-      const [ch,cm] = cp.time.split(":").map(Number);
-      const cpMin = ch*60+cm;
-      const minsLeft = cpMin - nowMin;
-      if(minsLeft>0 && minsLeft<=20 && hydration.loggedToday < cp.liters){
-        const key = "wcp_"+cp.time;
-        if(!wasNotifSent(key)){
-          markNotifSent(key);
-          const remaining = (cp.liters - hydration.loggedToday).toFixed(2);
-          sendLocalNotification(`💧 Check point en ${minsLeft} min`,
-            `A las ${cp.time} debes haber bebido ${cp.liters}L. Te faltan ${remaining}L.`);
-        }
-      }
-    });
-  }
-
-  // --- 4) Notificación matutina con frase ---
-  if(notifSettings.morningMotivation && notifSettings.morningHour){
-    const [mh,mm] = notifSettings.morningHour.split(":").map(Number);
-    const targetMin = mh*60+mm;
-    if(nowMin >= targetMin && nowMin < targetMin+10 && !wasNotifSent("morning")){
-      markNotifSent("morning");
-      sendLocalNotification(`🌿 Buenos días, ${plant.name}`,
-        getDailyQuote());
-    }
-  }
-}
 
 function changeAgendaDay(delta){
   if(delta===0){agendaViewDate=null;}
@@ -4352,6 +4406,8 @@ let sportCats = [
 ];
 
 let agendaCats = ["Personal","Trabajo","Salud","Deporte","Estudio","Casa","Social","Ocio","Otros"];
+let agendaCatColors = {};
+const CAT_PALETTE = ["#cfd8dc","#ffe0b2","#b2dfdb","#c8e6c9","#f8bbd0","#d1c4e9","#d7ccc8","#ffccbc","#bbdefb","#fff9c4"];
 
 // Paleta por categoría de agenda
 const SCHED_CAT_COLORS = {
@@ -4365,9 +4421,7 @@ const SCHED_CAT_COLORS = {
   "Social":   {bg:"#ffccbc", border:"#ff8a65", text:"#bf360c"},
   "Otros":    {bg:"#e0e0e0", border:"#9e9e9e", text:"#212121"},
 };
-function getSchedCatColor(cat){
-  return SCHED_CAT_COLORS[cat] || SCHED_CAT_COLORS["Otros"];
-}
+
 
 
 let disabledAppPages = [];
@@ -4564,28 +4618,71 @@ coreParams={estiramientos:{diasMaxSinHacer:1}, agua:{target:1.2, checkpoints:[
   lastDecayTs=now;
 }
 
-function postponeTask(id){
-  const t=agendaTasks.find(x=>x.id===id);if(!t)return;
-  if(t.done||t.failed){toast("Ya está marcada");return;}
-  if(!confirm(`¿Posponer "${t.name}" a otro día? Se aplicará -2 XP al confirmar.`)) return;
-  // Abrimos modal con date picker
-  const modal=document.createElement("div");
-  modal.className="modal-overlay open";
-  modal.id="postponeModal";
-  modal.innerHTML=`<div class="modal" style="max-width:380px">
-    <h3>📆 Posponer tarea</h3>
+function postponeTask(taskId){
+  const t = agendaTasks.find(x=>x.id===taskId);
+  if(!t) return;
+  const tm = new Date(); tm.setDate(tm.getDate()+1);
+  const defDate = `${tm.getFullYear()}-${String(tm.getMonth()+1).padStart(2,"0")}-${String(tm.getDate()).padStart(2,"0")}`;
+
+  const timeFields = t.isMultiDay ? "" : `
+    <div class="form-row">
+      <div class="form-group"><label>Hora inicio (opcional)</label>
+        <input type="time" id="postponeStart" value="${t.time||""}"></div>
+      <div class="form-group"><label>Hora fin (opcional)</label>
+        <input type="time" id="postponeEnd" value="${t.endTime||""}"></div>
+    </div>`;
+
+  openCustomModal("📆 Posponer tarea", `
     <p style="font-size:0.84rem;color:var(--text2);margin-bottom:0.8rem"><strong>${t.name}</strong></p>
-    <p style="font-size:0.78rem;color:var(--text3);margin-bottom:1rem">Elígelo con el calendario. Debe ser una fecha futura (posterior a hoy).</p>
     <div class="form-group-full"><label>Nueva fecha</label>
-      <input type="date" id="postponeDateInput" min="${(()=>{const d=new Date();d.setDate(d.getDate()+1);return d.toISOString().split('T')[0];})()}" value="${(()=>{const d=new Date();d.setDate(d.getDate()+1);return d.toISOString().split('T')[0];})()}">
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary btn-sm" onclick="document.getElementById('postponeModal')?.remove()">Cancelar</button>
-      <button class="btn btn-sm" onclick="confirmPostponeTask('${id}')">📆 Posponer (-2 XP)</button>
-    </div>
-  </div>`;
-  document.body.appendChild(modal);
-  modal.addEventListener("click",(e)=>{if(e.target===modal)modal.remove();});
+      <input type="date" id="postponeDate" value="${defDate}"></div>
+    ${timeFields}
+    <p style="font-size:0.72rem;color:var(--text3)">${t.wasPostponed ? "Ya estaba pospuesta: no se descuenta más XP." : "Coste: -2 XP (se recuperan al completarla)."}</p>
+  `, ()=>{
+    const nd = document.getElementById("postponeDate").value;
+    const ns = t.isMultiDay ? "" : document.getElementById("postponeStart").value;
+    const ne = t.isMultiDay ? "" : document.getElementById("postponeEnd").value;
+    if(!nd){ toast("Elige una fecha"); return false; }
+    if(nd < getTodayKey()){ toast("Elige hoy o una fecha futura"); return false; }
+    if(nd === t.date){ toast("Elige un día distinto al actual"); return false; }
+    if(ns && ne && ne <= ns){ toast("La hora fin debe ser posterior a la de inicio"); return false; }
+
+    if(!t.wasPostponed){
+      plant.xp = Math.max(0, plant.xp-2);
+      t.xpEarned = (t.xpEarned||0) - 2;
+    }
+
+    // Eventos de varios días: desplazar también la fecha fin
+    if(t.isMultiDay && t.endDate){
+      const shift = Math.round((new Date(nd+"T00:00:00") - new Date(t.date+"T00:00:00"))/86400000);
+      const e = new Date(t.endDate+"T00:00:00"); e.setDate(e.getDate()+shift);
+      t.endDate = `${e.getFullYear()}-${String(e.getMonth()+1).padStart(2,"0")}-${String(e.getDate()).padStart(2,"0")}`;
+    }
+
+    // Recurrente: ocultar ese día en la serie y separar la tarea,
+    // si no, generateRecurringForWeek() la regeneraría o la borraría
+    if(t.recurringId){
+      const rec = recurringTasks.find(r=>r.id===t.recurringId);
+      if(rec){
+        rec.skippedDates = rec.skippedDates || [];
+        if(!rec.skippedDates.includes(t.date)) rec.skippedDates.push(t.date);
+      }
+      delete t.recurringId;
+    }
+
+    t.postponedFrom = t.date;
+    t.date = nd;
+    if(!t.isMultiDay){
+      t.time = ns; t.endTime = ne;
+      if(t.timesPerDay>1 && t.multiTimes) t.multiTimes[0] = ns;
+    }
+    t.wasPostponed = true;
+    t.done = false;
+
+    save(); renderAgenda(); renderSchedule(); renderAll();
+    toast(`📆 Pospuesta al ${nd}${ns?" a las "+ns+(ne?"–"+ne:""):""}`);
+    return true;
+  });
 }
 
 function confirmPostponeTask(id){
@@ -4780,7 +4877,7 @@ function toggleAppPage(id){
 // SAVE Y LOAD
 function save(){
   updateAllLevels();
-  const s={notifSettings, plant, weeklyBlocks, disabledCoreHabits,disabledBuiltinGoals,builtinGoalsHomeVisible,needsState,hydration,flexibility,energy,sleep,goals,phoneUsage,dailyActions,streak,customHabits,customNeedStates,habitLogs,habitStreaks,protector,agendaTasks,books,longGoals,monthlyObjs,orderQuestions,coreParams,lastDecayTs,sportCats,disabledCoreHabits,disabledBuiltinGoals,recurringTasks,forest,lastAppTouch,corkNotes,motivData,agendaCats,disabledAppPages,obligatoryCoreHabits};
+  const s={agendaCatColors, notifSettings, plant, weeklyBlocks, disabledCoreHabits,disabledBuiltinGoals,builtinGoalsHomeVisible,needsState,hydration,flexibility,energy,sleep,goals,phoneUsage,dailyActions,streak,customHabits,customNeedStates,habitLogs,habitStreaks,protector,agendaTasks,books,longGoals,monthlyObjs,orderQuestions,coreParams,lastDecayTs,sportCats,disabledCoreHabits,disabledBuiltinGoals,recurringTasks,forest,lastAppTouch,corkNotes,motivData,agendaCats,disabledAppPages,obligatoryCoreHabits};
   try{localStorage.setItem("levelup_v7",JSON.stringify(s));}catch(e){console.warn(e);}
   scheduleNotifications();
 }
@@ -4816,6 +4913,7 @@ function load(){
     agendaTasks=s.agendaTasks||[];books=s.books||[];recurringTasks=s.recurringTasks||[];
     longGoals=s.longGoals||[];
     monthlyObjs=s.monthlyObjs||[];
+    agendaCatColors = s.agendaCatColors || {};
     orderQuestions=s.orderQuestions||[...DEFAULT_ORDER_QUESTIONS];
     coreParams=s.coreParams||{};
     sportCats=s.sportCats||[];
@@ -4911,38 +5009,74 @@ if(plant.alive && !isDisabledCore("estiramientos") && !isNeedProtected("flexibil
   checkDeath();
 }
 
+
 function checkDeath(){
   if(!plant.alive)return;
   updateAllLevels();
-  if(!isDisabledCore('estiramientos')&&!isNeedProtected('flexibility')&&flexibility.level<=0){killPlant("rigidez total");return;}
+  const firstDay = isPlantNewToday(); // primer día: puede quedar a 0% sin matar
+
+  if(!firstDay && !isDisabledCore('estiramientos')&&!isNeedProtected('flexibility')&&flexibility.level<=0){killPlant("rigidez total");return;}
+
   // Muerte por check point de agua vencido hoy
-if(!isDisabledCore('agua') && !isNeedProtected('hydration') && !isPlantNewToday()){
-  if(!isWaterCheckpointsSatisfied()){
-    // Solo mata si ya ha pasado algún check point sin cumplir y es tarde (el deadline ya pasó)
-    const cps = (coreParams.agua.checkpoints||[]);
-    const now = new Date();
-    const nowMins = now.getHours()*60 + now.getMinutes();
-    const anyOverdue = cps.some(cp=>{
-      const [h,m]=cp.time.split(":").map(Number);
-      return nowMins > h*60+m && hydration.loggedToday < cp.liters;
+  if(!firstDay && !isDisabledCore('agua') && !isNeedProtected('hydration')){
+    const nd = new Date(), nowMins = nd.getHours()*60 + nd.getMinutes();
+    const overdue = (coreParams.agua.checkpoints||[]).some(cp=>{
+      const [h,m] = cp.time.split(":").map(Number);
+      return nowMins >= h*60+m && hydration.loggedToday < cp.liters;
     });
-    if(anyOverdue){ killPlant("check point de hidratación vencido"); return; }
+    if(overdue || hydration.level <= 0){ killPlant("check point de hidratación vencido"); return; }
   }
-}
-  if(!isDisabledCore('pasos')&&!isNeedProtected('energy')&&energy.level<=0){killPlant("sedentarismo — energía agotada");return;}
-  for(const id of Object.keys(needsState)){
-    if(isDisabledCore(id))continue;
-    if(isNeedProtected(id))continue;
-    if((needsState[id]?.value||0)<=0){
-      const lbl={strength:"falta de ejercicio",intelligence:"falta de estudio",calmness:"estrés y desorden",entertainment:"falta de lectura"}[id]||id;
-      killPlant(lbl);return;
+
+  // Muerte por haber incumplido el check point el día anterior
+  if(hydration.missedYesterday){
+    hydration.missedYesterday = false;
+    if(!isDisabledCore('agua') && !isNeedProtected('hydration')){
+      killPlant("no cumpliste el check point de hidratación ayer");
+      return;
     }
   }
-  for(const h of customHabits){
-    if(isNeedProtected(getHabitNeedId(h)))continue;
-    const currentLevel = getCurrentCustomNeedLevel(h);
-    if(currentLevel <= 0){killPlant(`${h.name} descuidado`);return;}
+
+  if(!firstDay && !isDisabledCore('pasos')&&!isNeedProtected('energy')&&energy.level<=0){killPlant("sedentarismo — energía agotada");return;}
+
+  if(!firstDay){
+    for(const id of Object.keys(needsState)){
+      if(isDisabledCore(id))continue;
+      if(isNeedProtected(id))continue;
+      if((needsState[id]?.value||0)<=0){
+        const lbl={strength:"falta de ejercicio",intelligence:"falta de estudio",calmness:"estrés y desorden",entertainment:"falta de lectura"}[id]||id;
+        killPlant(lbl);return;
+      }
+    }
+    for(const h of customHabits){
+      if(isNeedProtected(getHabitNeedId(h)))continue;
+      const currentLevel = getCurrentCustomNeedLevel(h);
+      if(currentLevel <= 0){killPlant(`${h.name} descuidado`);return;}
+    }
   }
+}
+
+// PRIMER DÍA: necesidad a 0% pero sin morir
+const GRACE_PAGES={hydration:"agua",strength:"deporte",vitality:"sueno",intelligence:"aleman",energy:"pasos",calmness:"orden",flexibility:"estiramientos",entertainment:"lectura"};
+
+function isGraceZero(needId){
+  return plant.alive && isPlantNewToday() && Math.round(needValue(needId)) <= 0;
+}
+
+function applyGraceUI(){
+  Object.entries(GRACE_PAGES).forEach(([needId,pageKey])=>{
+    const page=document.getElementById("page-"+pageKey); if(!page) return;
+    let note=document.getElementById("graceNote_"+pageKey);
+    if(!note){
+      note=document.createElement("div");
+      note.id="graceNote_"+pageKey;
+      note.className="alert alert-warn";
+      const hdr=page.querySelector(".page-header");
+      if(hdr) hdr.insertAdjacentElement("afterend",note); else page.prepend(note);
+    }
+    const show=!isDisabledCore(pageKey) && isGraceZero(needId);
+    note.style.display=show?"":"none";
+    note.innerHTML=`⚠️ <strong>${getNeedLabel(needId).name} está al 0%</strong>, pero como es el primer día de tu planta no muere. Desde mañana sí contará.`;
+  });
 }
 
 function killPlant(reason){
@@ -5186,18 +5320,39 @@ function getNextWaterCheckpoint(){
   return null;
 }
 
-// Nivel 0-100 basado en check points:
-// - Si ya cumpliste todos los check points pasados → 100%
-// - Si no, decae desde 100 a la hora del check point según lo bebido vs lo exigido
+
 function getCurrentHydrationLevel(){
   if(!plant.alive) return 0;
   if(isNeedProtected('hydration')) return hydration.level;
   const todayKey = getTodayKey();
   if(hydration.lastResetDate !== todayKey){
+    // Antes de resetear: ¿se incumplió ayer?
+    const cpsPrev = coreParams.agua.checkpoints || [];
+    const needPrev = cpsPrev.length ? Math.max(...cpsPrev.map(c=>c.liters)) : hydration.target;
+    const cd = new Date(plant.createdAt || Date.now());
+    const createdKey = `${cd.getFullYear()}-${String(cd.getMonth()+1).padStart(2,'0')}-${String(cd.getDate()).padStart(2,'0')}`;
+    const wasFirstDay = createdKey === hydration.lastResetDate;
+    if(!isDisabledCore('agua') && !wasFirstDay && (hydration.loggedToday||0) < needPrev){
+      hydration.missedYesterday = true;
+    }
     hydration.lastResetDate = todayKey;
     hydration.extraHydration = 0;
     hydration.loggedToday = 0;
+    hydration.todayEntries = [];
+    hydration.checkedPoints = {};
   }
+
+  // ▼▼ NUEVO: check point vencido y sin cumplir → 0% (antes saltaba a 100% en el minuto exacto)
+  {
+    const _n = new Date(), _nm = _n.getHours()*60 + _n.getMinutes();
+    const _overdue = (coreParams.agua.checkpoints||[]).some(cp=>{
+      const [h,m] = cp.time.split(":").map(Number);
+      return _nm >= h*60+m && hydration.loggedToday < cp.liters;
+    });
+    if(_overdue) return 0;
+  }
+  // ▲▲
+
   const cps = (coreParams.agua.checkpoints||[]);
   if(!cps.length){
     // Fallback: decae lineal hasta la medianoche
@@ -6210,7 +6365,13 @@ function openAgendaCatModal(){
   renderAgendaCatListEdit();
   document.getElementById("agendaCatModal").classList.add("open");
 }
-function closeAgendaCatModal(){document.getElementById("agendaCatModal").classList.remove("open");renderAgendaCatOptions();renderAgenda();}
+
+function closeAgendaCatModal(){
+  document.getElementById("agendaCatModal").classList.remove("open");
+  renderAgendaCatOptions();
+  renderAgenda();
+  renderSchedule();
+}
 
 function addAgendaCategory(){
   const nameEl=document.getElementById("newAgendaCatName");
@@ -6218,19 +6379,24 @@ function addAgendaCategory(){
   if(!name){toast("Escribe el nombre");return;}
   if(agendaCats.some(c=>c.toLowerCase()===name.toLowerCase())){toast("Esa categoría ya existe");return;}
   agendaCats.push(name);
+  const col=document.getElementById("newAgendaCatColor")?.value;
+  if(col) agendaCatColors[name]=col;
   nameEl.value="";
-  save();renderAgendaCatListEdit();toast(`"${name}" añadida`);
+  save();renderAgendaCatListEdit();renderSchedule();toast(`"${name}" añadida`);
 }
 
 function renameAgendaCategory(oldName){
   const newName=prompt("Nuevo nombre de la categoría:",oldName);
   if(!newName||!newName.trim())return;
   const trimmed=newName.trim();
+  agendaCatColors[trimmed]=getSchedCatColor(oldName).bg;   // conserva el color
+  delete agendaCatColors[oldName];
   agendaCats=agendaCats.map(c=>c===oldName?trimmed:c);
   agendaTasks.forEach(t=>{if(t.category===oldName)t.category=trimmed;});
-  if(typeof recurringTasks!=="undefined")recurringTasks.forEach(r=>{if(r.category===oldName)r.category=trimmed;});
+  recurringTasks.forEach(r=>{if(r.category===oldName)r.category=trimmed;});
+  weeklyBlocks.forEach(b=>{if(b.category===oldName)b.category=trimmed;});
   if(agendaFilter===oldName)agendaFilter=trimmed;
-  save();renderAgendaCatListEdit();toast("Categoría renombrada");
+  save();renderAgendaCatListEdit();renderSchedule();toast("Categoría renombrada");
 }
 
 function deleteAgendaCategory(name){
@@ -6238,21 +6404,29 @@ function deleteAgendaCategory(name){
   if(!confirm(`¿Eliminar la categoría "${name}"? Las tareas existentes con esta categoría se pasarán a "${agendaCats.find(c=>c!==name)}".`))return;
   const fallback=agendaCats.find(c=>c!==name);
   agendaCats=agendaCats.filter(c=>c!==name);
+  delete agendaCatColors[name];
   agendaTasks.forEach(t=>{if(t.category===name)t.category=fallback;});
-  if(typeof recurringTasks!=="undefined")recurringTasks.forEach(r=>{if(r.category===name)r.category=fallback;});
+  recurringTasks.forEach(r=>{if(r.category===name)r.category=fallback;});
+  weeklyBlocks.forEach(b=>{if(b.category===name)b.category=fallback;});
   if(agendaFilter===name)agendaFilter="all";
-  save();renderAgendaCatListEdit();toast(`"${name}" eliminada`);
+  save();renderAgendaCatListEdit();renderSchedule();toast(`"${name}" eliminada`);
 }
 
 function renderAgendaCatListEdit(){
   const el=document.getElementById("agendaCatListEdit");if(!el)return;
-  el.innerHTML=agendaCats.map(name=>`
-    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+  el.innerHTML=agendaCats.map(name=>{
+    const esc=name.replace(/'/g,"\\'");
+    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <input type="color" value="${getSchedCatColor(name).bg}" onchange="setAgendaCatColor('${esc}',this.value)" title="Color en el horario" style="width:34px;height:30px;padding:0;border:1px solid var(--border2);border-radius:8px;background:none;cursor:pointer;flex-shrink:0">
       <div style="flex:1;font-size:0.84rem;font-weight:500">${name}</div>
-      <button class="btn btn-secondary btn-xs" onclick="renameAgendaCategory('${name.replace(/'/g,"\\'")}')">✏️</button>
-      <button class="btn btn-danger btn-xs" onclick="deleteAgendaCategory('${name.replace(/'/g,"\\'")}')">🗑️</button>
-    </div>`).join("");
+      <button class="btn btn-secondary btn-xs" onclick="renameAgendaCategory('${esc}')">✏️</button>
+      <button class="btn btn-danger btn-xs" onclick="deleteAgendaCategory('${esc}')">🗑️</button>
+    </div>`;
+  }).join("");
 }
+
+
+
 
 function renderAgendaCatOptions(){
   const optsHtml=agendaCats.map(c=>`<option value="${c}">${c}</option>`).join("");
@@ -7255,6 +7429,7 @@ function pruneOldData(){
   agendaTasks=agendaTasks.filter(t=>parseDate(t.date)>=cutoff30Ms||(!t.done&&!t.failed));
 }
 
+
 function fullResetGame(){
   if(!confirm("¿Reiniciar la planta? Se reiniciará la racha, el XP y el nivel de tu planta, y sus necesidades volverán al 100%, menos en el caso de las necesidades diarias, que tendrán el porcentaje dependiendo de la hora del día. "))return;
   if(decayInterval)clearInterval(decayInterval);
@@ -7272,7 +7447,8 @@ function fullResetGame(){
 
   dailyActions={orderDone:false,phoneDone:false,suenoDone:false,aguaObjReached:false,pasosObjReached:false,date:today};
   hydration.loggedToday=0;hydration.extraHydration=0;hydration.lastResetDate=todayKey;
-flexibility.doneToday=false;flexibility.extraFlexibility=0;flexibility.lastResetDate=todayKey;flexibility.lastDoneTs=now;
+  hydration.missedYesterday=false;
+  flexibility.doneToday=false;flexibility.extraFlexibility=0;flexibility.lastResetDate=todayKey;flexibility.lastDoneTs=now;
   energy.doneToday=false;energy.stepsToday=0;energy.extraEnergy=0;energy.lastResetDate=todayKey;
   sleep.doneToday=false;sleep.hoursToday=null;sleep.lowSleepStreak=0;sleep.lastResetDate=todayKey;
   sleep.highSleepStreak=0;
@@ -7290,11 +7466,12 @@ flexibility.doneToday=false;flexibility.extraFlexibility=0;flexibility.lastReset
 
   save();renderAll();renderNav();renderPhoneChart();renderSleepChart();startDecay();
 
-   // Forzar cierre del overlay de muerte
+  // Forzar cierre del overlay de muerte
   const ov=document.getElementById("deathOverlay");
   if(ov)ov.classList.remove("open");
   toast("🌱 Planta reiniciada · Racha, XP y nivel a cero · Tus registros se conservan");
 }
+
 
 function fullResetGameHard(){
   if(!confirm("¿Eliminar TODO incluyendo hábitos, metas y libros? Esta acción no se puede deshacer."))return;
@@ -7698,7 +7875,7 @@ async function toggleNotifications(){
 
 async function showWebNotif(title,body){
   const reg=await navigator.serviceWorker?.ready;
-  if(reg)reg.showNotification(title,{body,icon:"icon-192.png",badge:"icon-192.png"});
+  if(reg)reg.showNotification(title,{body,icon:"icon-192.png",badge:"icon-192.png",tag:title});
 }
 
 function scheduleWebNotifications(){
@@ -7834,6 +8011,7 @@ function renderAll(){
   renderCorkBoard();
   renderMotivPage();
   renderSchedule();
+    applyGraceUI();
 }
 
 function handleNeedClick(key){
@@ -7910,11 +8088,13 @@ function renderHome(){
     const key = "need_"+n.id;
     window._needClickData[key] = destinations;
 
-    grid.innerHTML+=`<div class="need-item ${cls}" onclick="handleNeedClick('${key}')">
+    const grace = isGraceZero(n.id);
+    grid.innerHTML+=`<div class="need-item ${cls}${grace?" grace-zero":""}" onclick="handleNeedClick('${key}')">
       <div class="need-icon">${n.icon}</div>
       <div class="need-name">${n.name}</div>
       <div class="need-pct">${v}%</div>
       <div class="need-bar-bg"><div class="need-bar-fill" style="width:${v}%"></div></div>
+      ${grace?`<div class="grace-note">0% · primer día, la planta no muere</div>`:""}
     </div>`;
   });
 
@@ -8353,10 +8533,32 @@ function fmtEsDate(s){
   return new Date(s+"T00:00:00").toLocaleDateString("es-ES",{day:"2-digit",month:"2-digit",year:"numeric"});
 }
 
+function _shade(hex, f){
+  const n = parseInt(hex.slice(1),16);
+  const c = [(n>>16)&255,(n>>8)&255,n&255].map(v=>Math.round(v*f).toString(16).padStart(2,"0"));
+  return "#"+c.join("");
+}
 
 function getSchedCatColor(cat){
-  return SCHED_CAT_COLORS[cat] || {bg:"#e0e0e0", border:"#9e9e9e"};
+  const custom = agendaCatColors[cat];
+  let c;
+  if(custom){
+    c = {bg:custom, border:_shade(custom,0.72), text:_shade(custom,0.28)};
+  } else if(SCHED_CAT_COLORS[cat]){
+    c = SCHED_CAT_COLORS[cat];
+  } else {
+    const bg = CAT_PALETTE[hashStr(cat) % CAT_PALETTE.length];
+    c = {bg, border:_shade(bg,0.72), text:_shade(bg,0.28)};
+  }
+  if(_isDark(c.bg)) c = {...c, text:"#ffffff"};
+  return c;
 }
+
+function setAgendaCatColor(name, color){
+  agendaCatColors[name] = color;
+  save(); renderSchedule();
+}
+
 
 // Calcula la altura óptima por hora para que todas las tareas del horario se vean bien
 function calcOptimalHourHeight(){
@@ -8492,7 +8694,7 @@ function renderSchedule(){
       const top = 4 + bannerSlot*26;
       bannerSlot++;
       col+=`<div class="sched-multiday ${cls}"
-        style="top:${top}px;background:${ev.color||'#bfdbfe'}"
+        style="top:${top}px;background:${ev.color||'#bfdbfe'};color:${_textFor(ev.color||'#bfdbfe')}"
         onclick="event.stopPropagation();openTaskMenu('${ev.id}',this)"
         title="${ev.name} (${ev.date} → ${ev.endDate})">
         ${isStart?`<span style="font-size:0.72rem">${ev.name}</span>`:`<span style="opacity:0.7">${ev.name}</span>`}
@@ -8509,7 +8711,7 @@ function renderSchedule(){
 
       const catCol = b.category
         ? getSchedCatColor(b.category)
-        : {bg: b.color||"#cfd8dc", border:"#90a4ae", text:"#263238"};
+        : {bg: b.color||"#cfd8dc", border:"#90a4ae", text:_textFor(b.color||"#cfd8dc")};
 
       const showName = realH >= 16;
       const showTime = realH >= 30;
@@ -8601,7 +8803,7 @@ function renderSchedule(){
     } else {
       legendHtml+=[...usedCats].map(c=>{
         const col=getSchedCatColor(c);
-        return `<span><span class="dot" style="background:${col.bg};border-left:3px solid ${col.border}"></span>${c}</span>`;
+        return `<span style="cursor:pointer" onclick="openAgendaCatModal()" title="Cambiar color"><span class="dot" style="background:${col.bg};border-left:3px solid ${col.border}"></span>${c}</span>`;
       }).join("");
     }
     legendHtml+=`<span><span class="dot" style="background:#bfdbfe"></span>Evento multi-día</span>`;
@@ -9814,7 +10016,7 @@ function toast(msg) {
 function startDecay() {
   if(decayInterval)clearInterval(decayInterval);
   decayInterval=setInterval(()=>{
-    if(plant.alive){applyDecay();updateAllLevels();renderAll();}
+    if(plant.alive){applyDecay();checkDeath();updateAllLevels();renderAll();}
   },30000);
 }
 
@@ -10870,6 +11072,15 @@ function undoSueno(){
   toast("↩️ Sueño deshecho");
 }
 
+function _isDark(hex){
+  const n = parseInt(hex.slice(1),16);
+  const r=(n>>16)&255, g=(n>>8)&255, b=n&255;
+  return (0.299*r + 0.587*g + 0.114*b) < 150;   // luminosidad
+}
+function _textFor(hex){
+  return _isDark(hex) ? "#ffffff" : _shade(hex,0.28);
+}
+
 function undoPasos(){
   if(!energy.doneToday){toast("No hay pasos registrados hoy");return;}
   if(!confirm(`¿Deshacer los ${energy.stepsToday.toLocaleString()} pasos de hoy? Se restará el XP ganado.`))return;
@@ -11096,8 +11307,9 @@ _sentNotifsToday = loadNotifSentSet();
 updateNotifToggleUI();
 applyDecay();
 updateAllLevels();
+checkDeath();   // ← nuevo: comprueba la muerte nada más abrir la app
 renderAll();
-setTimeout(updateNotifToggleUI, 100);  // ← fuerza una actualización tras cargar
+setTimeout(updateNotifToggleUI, 100);
 renderPhoneChart();
 renderSleepChart();
 startDecay();
