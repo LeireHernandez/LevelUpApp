@@ -2544,6 +2544,7 @@ body.sched-fs-open{ overflow:hidden; }
         <div class="form-group-full">
           <select id="hUnit">
             <option value="done">✅ Hecho / No hecho</option>
+            <option value="checks">☑️ Checks</option>
             <option value="minutes">⏱️ Minutos</option>
             <option value="hours">🕐 Horas</option>
             <option value="km">📍 Kilómetros</option>
@@ -2552,15 +2553,21 @@ body.sched-fs-open{ overflow:hidden; }
             <option value="custom">🔤 Personalizado</option>
           </select>
         </div>
-        <div class="form-group-full" id="hCustomUnitGroup" style="margin-top:10px">
-          <label>Nombre de tu unidad</label>
-          <input type="text" id="hCustomUnit" placeholder="Ej: vasos, repeticiones...">
-        <div class="form-group-full" id="hChecksGroup" style="margin-top:10px">
-  <label>Checks del hábito (opcional, uno por línea)</label>
-  <textarea id="hChecksList" rows="5" placeholder="Pasar la escoba&#10;Preparar la ropa"></textarea>
-  <div style="font-size:0.7rem;color:var(--text3);margin-top:4px">Se marcan en la pantalla del hábito. Al marcar todos, el hábito se registra solo.</div>
+        <div class="form-group-full" id="hChecksGroup" style="margin-top:10px;display:none">
+  <label>Checks del hábito</label>
+  <p id="hChecksSummary" style="font-size:0.78rem;color:var(--text3);margin-bottom:6px">Aún no has añadido ningún check</p>
+  <button type="button" class="btn btn-secondary btn-sm" onclick="openHabitChecksModal()">☑️ Editar checks</button>
+  <label style="margin-top:10px;display:block">¿Cómo se valida?</label>
+<select id="hChecksMode">
+  <option value="all">✅ Hay que completar TODOS los checks</option>
+  <option value="score">📊 Nota según los checks completados</option>
+</select>
+  <textarea id="hChecksList" style="display:none"></textarea>
 </div>
-        </div>
+<div class="form-group-full" id="hCustomUnitGroup" style="margin-top:10px;display:none">
+  <label>Nombre de tu unidad</label>
+  <input type="text" id="hCustomUnit" placeholder="Ej: vasos, repeticiones..." maxlength="30">
+</div>
       </div>
 
       <div class="habit-step" data-step="need">
@@ -3073,6 +3080,19 @@ body.sched-fs-open{ overflow:hidden; }
       <button class="btn btn-danger btn-sm" id="nedDeleteBtn" style="display:none" onclick="deleteNeedFromModal()">🗑️ Eliminar</button>
       <button class="btn btn-sm" onclick="saveNeedEdit()">💾 Guardar</button>
     </div>
+  </div>
+</div>
+
+<!-- MODAL: CHECKS DE UN HÁBITO -->
+<div class="modal-overlay" id="habitChecksModal">
+  <div class="modal">
+    <h3>☑️ Checks del hábito</h3>
+    <p style="font-size:0.78rem;color:var(--text3);margin-bottom:1rem">Añade los checks que quieras marcar cada día, en el orden que prefieras.</p>
+    <div id="habitChecksEditList"></div>
+    <hr style="border:none;border-top:1px solid var(--border);margin:1rem 0">
+    <div class="form-group-full"><label>Nuevo check</label><input type="text" id="newHabitCheck" placeholder="Ej: Pasar la escoba" maxlength="80" onkeydown="if(event.key==='Enter'){event.preventDefault();addHabitCheck();}"></div>
+    <button class="btn btn-sm" onclick="addHabitCheck()">+ Añadir check</button>
+    <div class="modal-footer"><button class="btn btn-sm" onclick="closeHabitChecksModal()">Listo</button></div>
   </div>
 </div>
 
@@ -5867,12 +5887,12 @@ function renderSportCatPreview(){
 function closeLogModal()
 {document.getElementById("logHabitModal").classList.remove("open");logHabitId=null;}
 
-function applyHabitLog(h, val, note){
+function applyHabitLog(h, val, note, effOverride){
   if(!habitLogs[h.id])habitLogs[h.id]=[];
   habitLogs[h.id].push({date:getTodayKey(),val,note,ts:Date.now()});
   if(habitLogs[h.id].length>90)habitLogs[h.id].shift();
 
-  const eff = h.effect || { type: "fill100" };
+    const eff = effOverride || h.effect || { type: "fill100" };
   const needId = getHabitNeedId(h);
 
   const systemApply = {
@@ -6094,7 +6114,7 @@ document.querySelectorAll("#hLangChoiceRow .wizard-choice-btn").forEach(b=>b.cla
       document.getElementById("hIcon").value=h.icon||"⭐";
       selectedHabitEmoji=h.icon||"⭐";
       document.getElementById("hAffects").value=h.affects||"calmness";
-      document.getElementById("hUnit").value=h.unit||"done";
+      document.getElementById("hUnit").value=(h.checklist&&h.checklist.length)?"checks":(h.unit||"done");
       document.getElementById("hDays").value=h.daysToKill||3;
       document.getElementById("hFreq").value=h.freq||"daily";
       document.getElementById("hObligatory").value=h.obligatory?"yes":"no";
@@ -6105,6 +6125,8 @@ document.querySelectorAll("#hLangChoiceRow .wizard-choice-btn").forEach(b=>b.cla
       document.getElementById("hChecksList").value=(h.checklist||[]).join("\n");
       document.getElementById("hShowNav").value=h.showNav?"yes":"no";
       document.getElementById("hNavSection").value=h.navSection||"core";
+      habitChecksDraft=[...(h.checklist||[])];
+      document.getElementById("hChecksMode").value=h.checkMode||"all";
       if(h.goal){
         document.getElementById("hGoalTarget").value=h.goal.target||"";
         document.getElementById("hGoalUnit").value=h.goal.unit||"";
@@ -6155,6 +6177,8 @@ document.getElementById("hLangTarget").value=1200;
     document.getElementById("hEffectDamage").value = 20;
     document.getElementById("hEffectDamageKill").value = "yes";
     document.getElementById("hChecksList").value="";
+    habitChecksDraft=[];
+    document.getElementById("hChecksMode").value="all";
     toggleEffectFields();
   }
   toggleCustomNeedField();toggleCustomUnitField();toggleLanguageFields();
@@ -6191,13 +6215,68 @@ function toggleEffectFields(){
   if(dg) dg.style.display = v === "damage" ? "grid" : "none";
 }
 
+let habitChecksDraft=[];
+
+function renderHabitChecksSummary(){
+  const el=document.getElementById("hChecksSummary"); if(!el)return;
+  const n=habitChecksDraft.length;
+  el.textContent=n?`${n} check${n>1?"s":""}: `+habitChecksDraft.join(" · "):"Aún no has añadido ningún check";
+}
+function renderHabitChecksEditList(){
+  const el=document.getElementById("habitChecksEditList");
+  if(el){
+    el.innerHTML=habitChecksDraft.map((c,i)=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:0.75rem;color:var(--text3);width:20px">${i+1}.</span>
+        <div style="flex:1;font-size:0.84rem;color:var(--text2)">${String(c).replace(/</g,"&lt;")}</div>
+        <button class="btn btn-secondary btn-xs" onclick="moveHabitCheck(${i},-1)" ${i===0?"disabled":""}>↑</button>
+        <button class="btn btn-secondary btn-xs" onclick="moveHabitCheck(${i},1)" ${i===habitChecksDraft.length-1?"disabled":""}>↓</button>
+        <button class="btn btn-secondary btn-xs" onclick="editHabitCheck(${i})">✏️</button>
+        <button class="btn btn-danger btn-xs" onclick="deleteHabitCheck(${i})">🗑️</button>
+      </div>`).join("")||"<p style='font-size:0.82rem;color:var(--text3)'>Sin checks. Añade el primero.</p>";
+  }
+  renderHabitChecksSummary();
+}
+function openHabitChecksModal(){
+  renderHabitChecksEditList();
+  document.getElementById("habitChecksModal").classList.add("open");
+  setTimeout(()=>document.getElementById("newHabitCheck")?.focus(),100);
+}
+function closeHabitChecksModal(){
+  document.getElementById("habitChecksModal").classList.remove("open");
+  renderHabitChecksSummary();
+}
+function addHabitCheck(){
+  const inp=document.getElementById("newHabitCheck"); if(!inp)return;
+  const v=inp.value.trim(); if(!v)return;
+  if(habitChecksDraft.includes(v)){toast("Ese check ya existe");return;}
+  habitChecksDraft.push(v); inp.value="";
+  renderHabitChecksEditList(); inp.focus();
+}
+function editHabitCheck(i){
+  const n=prompt("Editar check:",habitChecksDraft[i]);
+  if(n&&n.trim()){habitChecksDraft[i]=n.trim();renderHabitChecksEditList();}
+}
+function deleteHabitCheck(i){ habitChecksDraft.splice(i,1); renderHabitChecksEditList(); }
+function moveHabitCheck(i,d){
+  const j=i+d; if(j<0||j>=habitChecksDraft.length)return;
+  [habitChecksDraft[i],habitChecksDraft[j]]=[habitChecksDraft[j],habitChecksDraft[i]];
+  renderHabitChecksEditList();
+}
+
 function toggleCustomUnitField(){
   const v=document.getElementById("hUnit")?.value;
-  const cg=document.getElementById("hChecksGroup");if(cg)cg.style.display=v==="done"?"block":"none";
+  const cg=document.getElementById("hChecksGroup");if(cg)cg.style.display=v==="checks"?"block":"none";
+  renderHabitChecksSummary();
   const g=document.getElementById("hCustomUnitGroup");if(g)g.style.display=v==="custom"?"block":"none";
 }
+
+
 document.getElementById("hAffects").addEventListener("change",toggleCustomNeedField);
 document.getElementById("hUnit").addEventListener("change",toggleCustomUnitField);
+document.getElementById("hUnit").addEventListener("change",()=>{
+  if(document.getElementById("hUnit").value==="checks") openHabitChecksModal();
+});
 document.getElementById("hEffectType").addEventListener("change", toggleEffectFields);
 
 function renderEmojiPicker(containerId,emojis,_,selected){
@@ -6245,7 +6324,6 @@ function saveHabit(){
   const pbDirection=document.getElementById("hPbDirection").value;
   const icon=document.getElementById("hIcon").value.trim()||selectedHabitEmoji||"⭐";
   const affects=document.getElementById("hAffects").value;
-  const unit = isLanguage ? "hours" : document.getElementById("hUnit").value;
   const langStart=parseFloat(document.getElementById("hLangStart")?.value)||0;
 const langTarget=parseFloat(document.getElementById("hLangTarget")?.value)||1200;
   const days=parseFloat(document.getElementById("hDays").value)||3;
@@ -6258,7 +6336,13 @@ const langTarget=parseFloat(document.getElementById("hLangTarget")?.value)||1200
   const showNav=document.getElementById("hShowNav").value==="yes";
   const navSection=document.getElementById("hNavSection").value;
   const xpReward=parseInt(document.getElementById("hXpReward")?.value)||6;
-  const checklist=unit==="done"?(document.getElementById("hChecksList")?.value||"").split("\n").map(s=>s.trim()).filter(Boolean):[];
+  
+  const _unitSel = document.getElementById("hUnit").value;
+const isChecks = !isLanguage && _unitSel==="checks";
+const unit = isLanguage ? "hours" : (isChecks ? "done" : _unitSel);   // los checks se guardan como "hecho" + lista
+
+const checklist=isChecks?habitChecksDraft.slice():[];
+const checkMode=isChecks?document.getElementById("hChecksMode").value:"all";
   const effectType=document.getElementById("hEffectType").value;
   const effectValue=parseInt(document.getElementById("hEffectValue")?.value)||50;
   const effectAccumulate=document.getElementById("hEffectAccumulate")?.value==="yes";
@@ -6267,6 +6351,7 @@ const langTarget=parseFloat(document.getElementById("hLangTarget")?.value)||1200
   const effect={ type: effectType, value: effectValue, accumulate: effectAccumulate, damage: effectDamage, damageKill: effectDamageKill };
   const editId=document.getElementById("hEditId").value;
   if(!name){toast("Escribe un nombre");return;}
+  if(isChecks&&!checklist.length){toast("Añade al menos un check");openHabitChecksModal();return;}
   if(affects==="custom"&&!customNeedName){toast("Escribe el nombre de tu necesidad");return;}
   let goal=null;
   const gt=document.getElementById("hGoalTarget").value;
@@ -6280,11 +6365,11 @@ const langTarget=parseFloat(document.getElementById("hLangTarget")?.value)||1200
   }
   if(editId){
     const idx=customHabits.findIndex(x=>x.id===editId);
-    if(idx>=0)customHabits[idx]={...customHabits[idx],name,pbDirection,isLanguage,langStart,langTarget,icon,affects,unit,daysToKill:days,freq,obligatory,desc,customNeedName,customNeedIcon,customUnit,features,goal,showNav,navSection,effect,xpReward};
+    if(idx>=0)customHabits[idx]={...customHabits[idx],name,pbDirection,isLanguage,langStart,langTarget,icon,affects,unit,daysToKill:days,freq,obligatory,desc,customNeedName,customNeedIcon,customUnit,checklist,checkMode,features,goal,showNav,navSection,effect,xpReward};
 
   } else {
     const id="ch_"+Date.now();
-    customHabits.push({id,name,icon,pbDirection,isLanguage,langStart,langTarget,affects,unit,daysToKill:days,freq,obligatory,desc,customNeedName,customNeedIcon,customUnit,features,goal,showNav,navSection,effect,xpReward,createdAt:Date.now()});
+    customHabits.push({id,name,icon,pbDirection,isLanguage,langStart,langTarget,affects,unit,daysToKill:days,freq,obligatory,desc,customNeedName,customNeedIcon,customUnit,checklist,checkMode,features,goal,showNav,navSection,effect,xpReward,createdAt:Date.now()});
     customNeedStates[id]=100;
     if(!habitLogs[id])habitLogs[id]=[];
     habitStreaks[id]={current:0,last:null};
@@ -9445,11 +9530,20 @@ let html=`<div class="page-header">
 
 let registerFieldsHtml="";
   if(h.unit==="done"){
-    const _cl=h.checklist||[];
-const _doneList=(h.checksToday&&h.checksToday.date===getTodayKey())?h.checksToday.done:[];
-const _checksHtml=_cl.length?`<div style="margin-bottom:12px">${_cl.map((c,i)=>`<div class="order-question"><button class="order-toggle${_doneList.includes(c)?' on':''}" onclick="toggleHabitCheck('${h.id}',${i})"></button><span class="order-q-text">${String(c).replace(/</g,"&lt;")}</span></div>`).join("")}</div>`:"";
-registerFieldsHtml=_checksHtml+`<button class="btn" onclick="submitInlineHabitLog('${h.id}')">✅ Marcar como hecho</button>`;
-  } else if(h.unit==="hours"){
+  const _cl=h.checklist||[];
+  const _doneList=(h.checksToday&&h.checksToday.date===getTodayKey())?h.checksToday.done:[];
+  const _checksHtml=_cl.length?`<div style="margin-bottom:12px">${_cl.map((c,i)=>`<div class="order-question"><button class="order-toggle${_doneList.includes(c)?' on':''}" onclick="toggleHabitCheck('${h.id}',${i})"></button><span class="order-q-text">${String(c).replace(/</g,"&lt;")}</span></div>`).join("")}</div>`:"";
+  let _infoHtml="";
+  if(_cl.length){
+    const _nd=_cl.filter(c=>_doneList.includes(c)).length;
+    if(h.checkMode==="score"){
+      const _nota=Math.round((_nd/_cl.length)*100)/10;
+      _infoHtml=`<p style="font-size:0.8rem;color:var(--text2);margin-bottom:10px">📊 Nota actual: <strong>${_nota}/10</strong> (${_nd}/${_cl.length} checks)</p>`;
+    } else {
+      _infoHtml=`<p style="font-size:0.8rem;color:var(--text2);margin-bottom:10px">Debes completar todos los checks para validarlo (${_nd}/${_cl.length})</p>`;
+    }
+  }
+  registerFieldsHtml=_checksHtml+_infoHtml+`<button class="btn" onclick="${_cl.length?`submitHabitChecks('${h.id}')`:`submitInlineHabitLog('${h.id}')`}">${_cl.length?"📤 Enviar":"✅ Marcar como hecho"}</button>`;} else if(h.unit==="hours"){
     registerFieldsHtml=`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-bottom:10px">
       <div class="form-group" style="flex:1;min-width:100px;margin:0"><label>Horas</label><input type="number" id="inlineHoras_${h.id}" step="1" min="0" max="24" placeholder="0"></div>
       <div class="form-group" style="flex:1;min-width:100px;margin:0"><label>Minutos</label><input type="number" id="inlineMinutos_${h.id}" step="5" min="0" max="59" placeholder="0"></div>
@@ -9526,7 +9620,7 @@ if(logs.length>0){
     html+=`<div class="card"><div class="card-title">📋 Últimos registros</div>`;
     html+=reversedLogs.map((l,idx)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:0.8rem">
       <span style="color:var(--text3)">${l.date}</span>
-      <span style="font-weight:500;color:var(--green-md)">${h.unit==="done"?"✅ Hecho":formatHabitVal(h,l.val)}</span>
+      <span style="font-weight:500;color:var(--green-md)">${h.unit==="done"?((h.checkMode==="score"&&h.checklist&&h.checklist.length)?`📊 ${l.val}/10`:"✅ Hecho"):formatHabitVal(h,l.val)}</span>
       ${l.note?`<span style="font-size:0.7rem;color:var(--text3);font-style:italic">${l.note}</span>`:""}
       ${idx===0?`<button class="btn-icon" onclick="deleteLastHabitLog('${h.id}')" title="Eliminar y devolver XP">🗑️</button>`:""}
     </div>`).join("");
@@ -9570,12 +9664,30 @@ function toggleHabitCheck(habitId,i){
   if(!h.checksToday||h.checksToday.date!==today)h.checksToday={date:today,done:[]};
   const t=h.checklist[i], d=h.checksToday.done, k=d.indexOf(t);
   if(k>=0)d.splice(k,1); else d.push(t);
-  const already=(habitLogs[h.id]||[]).some(l=>l.date===today);
-  if(!already && h.checklist.every(c=>d.includes(c))){
-    applyHabitLog(h,1,`✔ ${h.checklist.length}/${h.checklist.length} checks`);
-    save();renderAll();
-  } else save();
+  save();
   renderCustomHabitDetail(habitId);
+}
+
+function submitHabitChecks(habitId){
+  const h=customHabits.find(x=>x.id===habitId); if(!h||!h.checklist||!h.checklist.length)return;
+  const today=getTodayKey();
+  if((habitLogs[h.id]||[]).some(l=>l.date===today)){toast("Ya enviaste este hábito hoy");return;}
+  const done=(h.checksToday&&h.checksToday.date===today)?h.checklist.filter(c=>h.checksToday.done.includes(c)).length:0;
+  const total=h.checklist.length;
+  if(h.checkMode==="score"){
+    if(done===0){toast("Marca al menos un check para enviar");return;}
+    const ratio=done/total;
+    const nota=Math.round(ratio*100)/10;
+    const base=h.effect||{type:"fill100"};
+    let eff=base;
+    if(base.type==="fill100") eff={...base,type:"fillCustom",value:Math.round(100*ratio),accumulate:true};
+    else if(base.type==="fillCustom") eff={...base,value:Math.round((base.value||50)*ratio)};
+    applyHabitLog(h,nota,`📊 Nota ${nota}/10 (${done}/${total} checks)`,eff);
+  } else {
+    if(done<total){toast(`Completa todos los checks para enviar (${done}/${total})`);return;}
+    applyHabitLog(h,1,`✔ ${total}/${total} checks`);
+  }
+  save();renderAll();renderCustomHabitDetail(habitId);
 }
 
 function goalWizardNext(){
@@ -9737,14 +9849,13 @@ function habitWizardNext(){
       toast("Escribe el nombre de tu nueva necesidad");return;
     }
   }
-  habitWizardStep=Math.min(habitWizardStep+1, steps.length-1);
-  renderHabitWizard();
-
     if(cur==="goal"){
     const countdown=document.getElementById("hGoalCountdown").value==="yes";
     const deadline=document.getElementById("hGoalDeadline").value;
     if(countdown&&!deadline){toast("La cuenta atrás necesita una fecha límite");return;}
   }
+  habitWizardStep=Math.min(habitWizardStep+1, steps.length-1);
+  renderHabitWizard();
 }
 
 function habitWizardBack(){
