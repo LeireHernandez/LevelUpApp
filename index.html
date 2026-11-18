@@ -2429,10 +2429,10 @@ textarea {
 
 
 /* ---- Notas más elegantes ---- */
-.cork-note{ font-family:'Cormorant Garamond',serif; font-size:1rem; line-height:1.45; }
-.cork-note-title{ font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:600; font-size:1.18rem; line-height:1.2; margin-bottom:.4rem; letter-spacing:.01em; }
-.cork-note-body{ font-family:'Cormorant Garamond',serif; font-size:1.05rem; font-weight:500; line-height:1.5; color:#3a2d1a; }
-.cork-note-date{ font-family:'Cormorant Garamond',serif; font-style:italic; font-size:.8rem; }
+.cork-note{ font-family:'DM Sans',sans-serif; font-size:.8rem; line-height:1.45; }
+.cork-note-title{ font-family:'DM Sans',sans-serif; font-style:normal; font-weight:600; font-size:.9rem; line-height:1.25; margin-bottom:.4rem; }
+.cork-note-body{ font-family:'DM Sans',sans-serif; font-size:.78rem; font-weight:400; line-height:1.5; color:#3a2d1a; }
+.cork-note-date{ font-family:'DM Sans',sans-serif; font-style:normal; font-size:.65rem; }
 
 /* ---- Tareas: botones siempre en la misma fila ---- */
 .task-item{ flex-wrap:nowrap !important; overflow:visible !important; }
@@ -2459,6 +2459,15 @@ textarea {
 .sched-block strong{
   color:inherit;
 }
+
+#scheduleGrid{ grid-template-columns:56px repeat(7,minmax(var(--sched-col-min),1fr)) !important; min-width:max-content; }
+.sched-fs-tools{ display:none; }
+.sched-wrap.fs{ position:fixed; inset:0; z-index:3000; max-height:none !important; height:100%; border-radius:0; border:none;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); }
+.sched-wrap.fs .sched-fs-tools{ display:flex; gap:6px; position:fixed; top:calc(8px + env(safe-area-inset-top,0px)); right:8px; z-index:3100; }
+.sched-fs-tools button{ width:28px; height:28px; border-radius:50%; border:1px solid var(--border2); background:var(--card); color:var(--text2);
+  font-size:.85rem; line-height:1; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.18); padding:0; }
+body.sched-fs-open{ overflow:hidden; }
 
 </style>
 </head>
@@ -2545,6 +2554,11 @@ textarea {
         <div class="form-group-full" id="hCustomUnitGroup" style="margin-top:10px">
           <label>Nombre de tu unidad</label>
           <input type="text" id="hCustomUnit" placeholder="Ej: vasos, repeticiones...">
+        <div class="form-group-full" id="hChecksGroup" style="margin-top:10px">
+  <label>Checks del hábito (opcional, uno por línea)</label>
+  <textarea id="hChecksList" rows="5" placeholder="Pasar la escoba&#10;Preparar la ropa"></textarea>
+  <div style="font-size:0.7rem;color:var(--text3);margin-top:4px">Se marcan en la pantalla del hábito. Al marcar todos, el hábito se registra solo.</div>
+</div>
         </div>
       </div>
 
@@ -3377,7 +3391,8 @@ textarea {
       <span id="scheduleZoomLabel" style="font-size:0.72rem;color:var(--text3);min-width:42px;text-align:center">100%</span>
       <button class="btn btn-secondary btn-xs" onclick="changeScheduleZoom(1)" title="Zoom in">+</button>
       <button class="btn btn-secondary btn-xs" onclick="changeScheduleZoom(0)" title="Restablecer zoom">⟲</button>
-      <button class="btn btn-secondary btn-xs" onclick="scheduleZoom=0.4;applyScheduleZoom();renderSchedule();" title="Ver semana completa">Ver todo</button>
+      <button class="btn btn-secondary btn-xs" onclick="scheduleZoom=0.25;applyScheduleZoom();renderSchedule();" title="Ver semana completa">Ver todo</button>
+      <button class="btn btn-secondary btn-xs" onclick="toggleScheduleFullscreen(true)" title="Pantalla completa">⛶</button>
     </div>
 
     <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
@@ -3386,7 +3401,14 @@ textarea {
       <button class="btn btn-secondary btn-xs" onclick="changeScheduleWeek(1)"> →</button>
     </div>
   </div>
-  <div class="sched-wrap"><div class="sched" id="scheduleGrid"></div></div>
+  <div class="sched-wrap" id="schedWrap">
+  <div class="sched-fs-tools">
+    <button onclick="changeScheduleZoom(-1)" title="Zoom out">−</button>
+    <button onclick="changeScheduleZoom(1)" title="Zoom in">+</button>
+    <button onclick="toggleScheduleFullscreen(false)" title="Cerrar">✕</button>
+  </div>
+  <div class="sched" id="scheduleGrid"></div>
+</div>
   <div id="scheduleLegend"></div>
 </div>
 
@@ -3753,9 +3775,11 @@ textarea {
     </div>
   </div>
 </div>
-          <button class="btn btn-secondary btn-sm" onclick="renamePlant()">✏️ Renombrar planta</button>
-          <button class="btn btn-secondary btn-sm" onclick="openEditCore('all')">⚙️ Ajustar todos los parámetros</button>
-        </div>
+<div style="flex-basis:100%;width:100%;display:flex;flex-wrap:wrap;gap:12px;margin-top:1rem">
+  <button class="btn btn-secondary btn-sm" onclick="renamePlant()">✏️ Renombrar planta</button>
+  <button class="btn btn-secondary btn-sm" onclick="openEditCore('all')">⚙️ Ajustar todos los parámetros</button>
+</div>
+</div>
       </div>
     </div>
 
@@ -4377,6 +4401,11 @@ function runNotifChecks(){
   }
 }
 
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden) return;
+  try{ if(notifSettings.enabled){ runNotifChecks(); scheduleNotifications(); } }catch(e){ console.warn("[notif]",e); }
+});
+
 // Comprueba cada minuto si hay que lanzar notificaciones de las configuradas
 function startNotifChecker(){
   if(_notifCheckTimer) clearInterval(_notifCheckTimer);
@@ -4850,6 +4879,7 @@ if(!isDisabledCore("movil") && !dailyActions.phoneDone && !isPhoneProtected()){
   }
 
   dailyActions.orderDone=false;dailyActions.phoneDone=false;dailyActions.suenoDone=false;
+  dailyActions.orderChecks=[];
   dailyActions.aguaObjReached=false;dailyActions.pasosObjReached=false;
   customHabits.forEach(h=>{if(h.obligatory)dailyActions["custom_"+h.id]=false;});
   dailyActions.date=today;
@@ -6064,6 +6094,7 @@ document.querySelectorAll("#hLangChoiceRow .wizard-choice-btn").forEach(b=>b.cla
       document.getElementById("hCustomNeedName").value=h.customNeedName||"";
       document.getElementById("hCustomNeedIcon").value=h.customNeedIcon||"";
       document.getElementById("hCustomUnit").value=h.customUnit||"";
+      document.getElementById("hChecksList").value=(h.checklist||[]).join("\n");
       document.getElementById("hShowNav").value=h.showNav?"yes":"no";
       document.getElementById("hNavSection").value=h.navSection||"core";
       if(h.goal){
@@ -6115,7 +6146,7 @@ document.getElementById("hLangTarget").value=1200;
     document.getElementById("hEffectAccumulate").value = "yes";
     document.getElementById("hEffectDamage").value = 20;
     document.getElementById("hEffectDamageKill").value = "yes";
-    document.getElementById("hXpReward").value=6;
+    document.getElementById("hChecksList").value="";
     toggleEffectFields();
   }
   toggleCustomNeedField();toggleCustomUnitField();toggleLanguageFields();
@@ -6154,6 +6185,7 @@ function toggleEffectFields(){
 
 function toggleCustomUnitField(){
   const v=document.getElementById("hUnit")?.value;
+  const cg=document.getElementById("hChecksGroup");if(cg)cg.style.display=v==="done"?"block":"none";
   const g=document.getElementById("hCustomUnitGroup");if(g)g.style.display=v==="custom"?"block":"none";
 }
 document.getElementById("hAffects").addEventListener("change",toggleCustomNeedField);
@@ -6218,7 +6250,7 @@ const langTarget=parseFloat(document.getElementById("hLangTarget")?.value)||1200
   const showNav=document.getElementById("hShowNav").value==="yes";
   const navSection=document.getElementById("hNavSection").value;
   const xpReward=parseInt(document.getElementById("hXpReward")?.value)||6;
-
+  const checklist=unit==="done"?(document.getElementById("hChecksList")?.value||"").split("\n").map(s=>s.trim()).filter(Boolean):[];
   const effectType=document.getElementById("hEffectType").value;
   const effectValue=parseInt(document.getElementById("hEffectValue")?.value)||50;
   const effectAccumulate=document.getElementById("hEffectAccumulate")?.value==="yes";
@@ -6756,7 +6788,16 @@ function saveGoal(){
   closeGoalModal();save();renderAll();toast(`🎯 "${name}" guardado`);
 }
 
-
+function toggleScheduleFullscreen(on){
+  const w=document.getElementById("schedWrap"); if(!w)return;
+  w.classList.toggle("fs",!!on);
+  document.body.classList.toggle("sched-fs-open",!!on);
+  window._schedAutoScroll=false;
+  renderSchedule();
+}
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"&&document.getElementById("schedWrap")?.classList.contains("fs")) toggleScheduleFullscreen(false);
+});
 
 // MONTHLY OBJECTIVES
 function openMonthlyObjModal(editId){
@@ -7544,6 +7585,7 @@ let _schedNowTimer=null;
 function changeScheduleWeek(offset){
   if(offset===0) scheduleWeekOffset=0;
   else scheduleWeekOffset+=offset;
+  window._schedAutoScroll=true;
   renderSchedule();
 }
 
@@ -7556,11 +7598,7 @@ function getScheduleMonday(){
 
 
 
-function changeScheduleWeek(offset){
-  if(offset===0) scheduleWeekOffset=0;
-  else scheduleWeekOffset+=offset;
-  renderSchedule();
-}
+
 
 function getScheduleMonday(){
   const mon=new Date();
@@ -7882,10 +7920,25 @@ function scheduleWebNotifications(){
   _webNotifTimers.forEach(clearTimeout);_webNotifTimers=[];
   if(!("Notification" in window)||Notification.permission!=="granted"||!plant.alive)return;
   const now=Date.now(),limit=now+24*3600*1000;
-  const put=(title,body,at)=>{
-    const ms=at.getTime()-now;
-    if(ms>0&&at.getTime()<limit)_webNotifTimers.push(setTimeout(()=>showWebNotif(title,body),ms));
-  };
+const hasTrigger=(typeof TimestampTrigger!=="undefined");
+if(hasTrigger){
+  navigator.serviceWorker?.ready.then(reg=>reg.getNotifications({includeTriggered:true}))
+    .then(list=>(list||[]).forEach(n=>{ if(n.showTrigger||String(n.tag).startsWith("lu_")) n.close(); }))
+    .catch(()=>{});
+}
+const put=(title,body,at)=>{
+  const ms=at.getTime()-now;
+  if(!(ms>0&&at.getTime()<limit))return;
+  if(hasTrigger){
+    navigator.serviceWorker?.ready.then(reg=>reg.showNotification(title,{
+      body,icon:"icon-192.png",badge:"icon-192.png",
+      tag:"lu_"+at.getTime()+"_"+title,
+      showTrigger:new TimestampTrigger(at.getTime())
+    })).catch(()=>{});
+  } else {
+    _webNotifTimers.push(setTimeout(()=>showWebNotif(title,body),ms));
+  }
+};
   const d=new Date();d.setHours(0,0,0,0);
   for(let i=0;i<2;i++){
     const day=new Date(d);day.setDate(d.getDate()+i);
@@ -8456,21 +8509,11 @@ if(ebl){
 }
 
 // ===== ZOOM DEL HORARIO =====
-const SCHED_ZOOM_MIN = 0.5;
-const SCHED_ZOOM_MAX = 2.0;
+const SCHED_ZOOM_MIN = 0.2;
+const SCHED_ZOOM_MAX = 3.0;
 
 function getZoomBounds(){
-  // Límite inferior: que el nombre y la hora quepan en la columna
-  const baseColMin = 150;
-  const minZoomWidth = 150 / baseColMin;
-
-  // Límite inferior por altura: que el bloque más corto con 2 líneas quepa
-  const baseHour = calcOptimalHourHeight();
-  const minZoomHeight = 34 / baseHour;
-
-  const minZoom = Math.max(SCHED_ZOOM_MIN, minZoomWidth, minZoomHeight);
-
-  return { min: Math.min(minZoom, 1), max: SCHED_ZOOM_MAX };
+  return { min: SCHED_ZOOM_MIN, max: SCHED_ZOOM_MAX };
 }
 
 function changeScheduleZoom(dir){
@@ -8499,7 +8542,7 @@ function changeScheduleZoom(dir){
     scheduleZoom = Math.round(fitZoom * 100) / 100;
   } else {
     // Zoom incremental
-    const steps = [0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2];
+    const steps = [0.2,0.25,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1,1.1,1.25,1.5,1.75,2,2.5,3];
     const validSteps = steps.filter(z => z >= min - 0.001 && z <= max + 0.001);
     const cur = scheduleZoom;
     let idx = validSteps.findIndex(z => Math.abs(z - cur) < 0.01);
@@ -8516,11 +8559,11 @@ function applyScheduleZoom(){
   const grid = document.getElementById("scheduleGrid");
   if(!grid) return;
   const baseHour = calcOptimalHourHeight();
-  const hourPx = Math.max(24, Math.round(baseHour * scheduleZoom));
+  const hourPx = Math.max(10, Math.round(baseHour * scheduleZoom));
   grid.style.setProperty("--sched-hour-h", hourPx + "px");
   // Ancho de columna también escala con el zoom
   const baseCol = window.innerWidth < 700 ? 150 : 130;
-  const colPx = Math.max(120, Math.round(baseCol * scheduleZoom));
+  const colPx = Math.max(36, Math.round(baseCol * scheduleZoom));
   grid.style.setProperty("--sched-col-min", colPx + "px");
   const lbl = document.getElementById("scheduleZoomLabel");
   if(lbl) lbl.textContent = Math.round(scheduleZoom * 100) + "%";
@@ -8782,7 +8825,12 @@ function renderSchedule(){
     html+=col;
   });
 
+  // Guardar el scroll actual antes de redibujar
+  const _wrapPrev=el.parentElement;
+  const _prevTop=_wrapPrev?_wrapPrev.scrollTop:0, _prevLeft=_wrapPrev?_wrapPrev.scrollLeft:0;
   el.innerHTML=html;
+  // Mantener el scroll donde estaba (el horario se redibuja solo cada 30 s)
+  if(_wrapPrev && window._schedAutoScroll===false){ _wrapPrev.scrollTop=_prevTop; _wrapPrev.scrollLeft=_prevLeft; }
 
   // ---------- Leyenda dinámica ----------
   const legend=document.getElementById("scheduleLegend");
@@ -8812,16 +8860,18 @@ function renderSchedule(){
     legend.innerHTML=legendHtml;
   }
 
-  // ---------- Auto-scroll ----------
+  // ---------- Auto-scroll (solo al entrar o cambiar de semana) ----------
   const wrap=el.parentElement;
-  if(wrap && window.innerWidth<700 && scheduleWeekOffset===0){
+  const _doAuto = window._schedAutoScroll!==false;
+  window._schedAutoScroll=false;
+  if(_doAuto && wrap && window.innerWidth<700 && scheduleWeekOffset===0){
     setTimeout(()=>{
       const todayCol=wrap.querySelector(".sched-col.today");
       if(todayCol) wrap.scrollLeft=Math.max(0, todayCol.offsetLeft-60);
       wrap.scrollTop = Math.max(0, (nowMin/60)*HOUR_PX - wrap.clientHeight/3);
     }, 50);
   }
-  if(wrap && window.innerWidth>=700){
+  if(_doAuto && wrap && window.innerWidth>=700){
     setTimeout(()=>{
       wrap.scrollTop = Math.max(0, 7*HOUR_PX - 20);
     }, 50);
@@ -9182,10 +9232,19 @@ function renderAlemanRoadmap(){
   }).join("");
 }
 
+function toggleOrderCheck(i){
+  const q=orderQuestions[i]; if(q===undefined)return;
+  const list=dailyActions.orderChecks=dailyActions.orderChecks||[];
+  const k=list.indexOf(q);
+  if(k>=0)list.splice(k,1); else list.push(q);
+  const b=document.getElementById("oq"+i); if(b)b.classList.toggle("on",k<0);
+  save();
+}
+
 function renderOrderPage(){
   const qc=document.getElementById("orderQuestionsContainer");
   if(qc){
-    qc.innerHTML=orderQuestions.map((q,i)=>`<div class="order-question"><button class="order-toggle" id="oq${i}" onclick="this.classList.toggle('on')"></button><span class="order-q-text">${q}</span></div>`).join("");
+    qc.innerHTML=orderQuestions.map((q,i)=>`<div class="order-question"><button class="order-toggle${(dailyActions.orderChecks||[]).includes(q)?' on':''}" id="oq${i}" onclick="toggleOrderCheck(${i})"></button><span class="order-q-text">${q}</span></div>`).join("");
   }
   const da=document.getElementById("ordenDoneAlert");
   if(da)da.innerHTML="";
@@ -9370,7 +9429,10 @@ let html=`<div class="page-header">
 
 let registerFieldsHtml="";
   if(h.unit==="done"){
-    registerFieldsHtml=`<button class="btn" onclick="submitInlineHabitLog('${h.id}')">✅ Marcar como hecho</button>`;
+    const _cl=h.checklist||[];
+const _doneList=(h.checksToday&&h.checksToday.date===getTodayKey())?h.checksToday.done:[];
+const _checksHtml=_cl.length?`<div style="margin-bottom:12px">${_cl.map((c,i)=>`<div class="order-question"><button class="order-toggle${_doneList.includes(c)?' on':''}" onclick="toggleHabitCheck('${h.id}',${i})"></button><span class="order-q-text">${String(c).replace(/</g,"&lt;")}</span></div>`).join("")}</div>`:"";
+registerFieldsHtml=_checksHtml+`<button class="btn" onclick="submitInlineHabitLog('${h.id}')">✅ Marcar como hecho</button>`;
   } else if(h.unit==="hours"){
     registerFieldsHtml=`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-bottom:10px">
       <div class="form-group" style="flex:1;min-width:100px;margin:0"><label>Horas</label><input type="number" id="inlineHoras_${h.id}" step="1" min="0" max="24" placeholder="0"></div>
@@ -9484,6 +9546,20 @@ if(logs.length>0){
       });
     },100);
   }
+}
+
+function toggleHabitCheck(habitId,i){
+  const h=customHabits.find(x=>x.id===habitId); if(!h||!h.checklist)return;
+  const today=getTodayKey();
+  if(!h.checksToday||h.checksToday.date!==today)h.checksToday={date:today,done:[]};
+  const t=h.checklist[i], d=h.checksToday.done, k=d.indexOf(t);
+  if(k>=0)d.splice(k,1); else d.push(t);
+  const already=(habitLogs[h.id]||[]).some(l=>l.date===today);
+  if(!already && h.checklist.every(c=>d.includes(c))){
+    applyHabitLog(h,1,`✔ ${h.checklist.length}/${h.checklist.length} checks`);
+    save();renderAll();
+  } else save();
+  renderCustomHabitDetail(habitId);
 }
 
 function goalWizardNext(){
@@ -9674,8 +9750,6 @@ function toggleShowNavField(){
   if(g) g.style.display = v==="yes" ? "" : "none";
 }
 
-
-// AGENDA
 function renderAgenda(){
   generateRecurringForWeek();
   renderAgendaCatOptions();
@@ -9705,43 +9779,49 @@ function renderAgenda(){
   const todayBtn=document.getElementById("agendaTodayBtn");
   if(todayBtn)todayBtn.style.display=isToday?"none":"";
 
-let overdueTasks=agendaTasks.filter(t=>t.date<today&&!t.done&&!t.failed);
-let todayTasks=agendaTasks.filter(t=>t.date===viewDate || (t.isMultiDay && t.date<=viewDate && t.endDate>=viewDate));
-let upcoming=agendaTasks.filter(t=>t.date>today&&t.date!==viewDate&&!t.recurringId).sort((a,b)=>a.date.localeCompare(b.date)||((a.time||"").localeCompare(b.time||"")));
+  let overdueTasks=agendaTasks.filter(t=>t.date<today&&!t.done&&!t.failed);
+  let todayTasks=agendaTasks.filter(t=>t.date===viewDate || (t.isMultiDay && t.date<=viewDate && t.endDate>=viewDate));
+  let upcoming=agendaTasks.filter(t=>t.date>today&&t.date!==viewDate&&!t.recurringId).sort((a,b)=>a.date.localeCompare(b.date)||((a.time||"").localeCompare(b.time||"")));
   if(agendaFilter!=="all"){todayTasks=todayTasks.filter(t=>t.category===agendaFilter);upcoming=upcoming.filter(t=>t.category===agendaFilter);}
-todayTasks.sort((a,b)=>{
-  if(a.isMultiDay!==b.isMultiDay)return a.isMultiDay?-1:1;
-  if(a.done!==b.done)return a.done?1:-1;
-  return(a.time||"99:99").localeCompare(b.time||"99:99");
-});
 
-const ol=document.getElementById("agendaOverdueList");
-if(ol){
-  if(!overdueTasks.length){ol.innerHTML="";}
-  else ol.innerHTML=overdueTasks.map(t=>renderTaskItem(t)).join("");
-  document.getElementById("agendaOverdueCard").style.display=overdueTasks.length?"":"none";
-}
+  // Orden: multi-día, luego sin hora, luego por hora de inicio
+  const _agendaSort=(a,b)=>{
+    if(!!a.isMultiDay!==!!b.isMultiDay)return a.isMultiDay?-1:1;
+    const ta=a.time||"",tb=b.time||"";
+    if(!ta&&tb)return -1;
+    if(ta&&!tb)return 1;
+    return ta.localeCompare(tb)||(a.name||"").localeCompare(b.name||"");
+  };
+  todayTasks.sort(_agendaSort);
+  overdueTasks.sort((a,b)=>a.date.localeCompare(b.date)||_agendaSort(a,b));
 
-const tl=document.getElementById("agendaTodayList");
-if(tl){
-  if(!todayTasks.length){tl.innerHTML=`<p style="font-size:0.84rem;color:var(--text3);padding:0.5rem 0">✅ No hay tareas sin completar.</p>`;}
-  else{
-    const nowStr=new Date().toTimeString().slice(0,5);
-    let lineAdded=false;
-    let html="";
-    for(const t of todayTasks){
-      if(isToday&&!lineAdded&&!t.done&&!t.failed&&t.time&&t.time>nowStr){
-        html+=`<div style="display:flex;align-items:center;gap:8px;margin:6px 0"><div style="flex:1;height:2px;background:var(--green-lt);border-radius:2px"></div><span style="font-size:0.65rem;color:var(--green-md);font-weight:500;white-space:nowrap">▶ Ahora ${nowStr}</span><div style="flex:1;height:2px;background:var(--green-lt);border-radius:2px"></div></div>`;
-        lineAdded=true;
-      }
-      html+=renderTaskItem(t);
-    }
-    if(isToday&&!lineAdded){
-      html+=`<div style="display:flex;align-items:center;gap:8px;margin:6px 0"><div style="flex:1;height:2px;background:var(--green-lt);border-radius:2px"></div><span style="font-size:0.65rem;color:var(--green-md);font-weight:500;white-space:nowrap">▶ Ahora ${nowStr}</span><div style="flex:1;height:2px;background:var(--green-lt);border-radius:2px"></div></div>`;
-    }
-    tl.innerHTML=html;
+  const ol=document.getElementById("agendaOverdueList");
+  if(ol){
+    if(!overdueTasks.length){ol.innerHTML="";}
+    else ol.innerHTML=overdueTasks.map(t=>renderTaskItem(t)).join("");
+    document.getElementById("agendaOverdueCard").style.display=overdueTasks.length?"":"none";
   }
-}
+
+  const tl=document.getElementById("agendaTodayList");
+  if(tl){
+    if(!todayTasks.length){tl.innerHTML=`<p style="font-size:0.84rem;color:var(--text3);padding:0.5rem 0">✅ No hay tareas sin completar.</p>`;}
+    else{
+      const nowStr=new Date().toTimeString().slice(0,5);
+      let lineAdded=false;
+      let html="";
+      for(const t of todayTasks){
+        if(isToday&&!lineAdded&&!t.done&&!t.failed&&t.time&&t.time>nowStr){
+          html+=`<div style="display:flex;align-items:center;gap:8px;margin:6px 0"><div style="flex:1;height:2px;background:var(--green-lt);border-radius:2px"></div><span style="font-size:0.65rem;color:var(--green-md);font-weight:500;white-space:nowrap">▶ Ahora ${nowStr}</span><div style="flex:1;height:2px;background:var(--green-lt);border-radius:2px"></div></div>`;
+          lineAdded=true;
+        }
+        html+=renderTaskItem(t);
+      }
+      if(isToday&&!lineAdded){
+        html+=`<div style="display:flex;align-items:center;gap:8px;margin:6px 0"><div style="flex:1;height:2px;background:var(--green-lt);border-radius:2px"></div><span style="font-size:0.65rem;color:var(--green-md);font-weight:500;white-space:nowrap">▶ Ahora ${nowStr}</span><div style="flex:1;height:2px;background:var(--green-lt);border-radius:2px"></div></div>`;
+      }
+      tl.innerHTML=html;
+    }
+  }
 
   const ul=document.getElementById("agendaUpcomingList");
   if(ul){
@@ -9966,7 +10046,8 @@ function navigateTo(pageId) {
     if(st){const rf=document.getElementById("runningExtraFields");if(rf)rf.style.display=st.value==="running"?"":"none";}
   }
   if(pageId==="bosque"){setTimeout(renderForest,100);}
-  if(pageId==="horario"){ generateRecurringForWeek(); setTimeout(renderSchedule,50); }
+  if(pageId==="notas"){ renderCorkBoard(); }
+  if(pageId==="horario"){ window._schedAutoScroll=true; generateRecurringForWeek(); setTimeout(renderSchedule,50); }
   
   renderHabitsPages();
   history.pushState({page:pageId},"");
@@ -10306,7 +10387,13 @@ function generateRecurringForWeek(){
     // Si la recurrente existe, mantener todo lo que no sea una regeneración futura
     if(t.date<todayStr)return true;
     if(t.done||t.failed)return true;
-    // Futuras pendientes: se regeneran abajo, así que se borran aquí
+    // Futuras pendientes: se regeneran abajo. Antes guardamos sus checks (solo de ese día)
+    const _rec=recurringTasks.find(r=>r.id===t.recurringId);
+    if(_rec){
+      _rec.dayChecks=_rec.dayChecks||{};
+      if(t.checks&&t.checks.length) _rec.dayChecks[t.date]=t.checks;
+      else delete _rec.dayChecks[t.date];
+    }
     return false;
   });
 
@@ -10320,56 +10407,57 @@ function generateRecurringForWeek(){
       if(!(r.days||[]).includes(dayNum))continue;
       const dateStr=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       // Saltar los días que el usuario ha ocultado manualmente
-if((r.skippedDates||[]).includes(dateStr)) continue;
+      if((r.skippedDates||[]).includes(dateStr)) continue;
       const alreadyExists=agendaTasks.find(t=>t.recurringId===r.id&&t.date===dateStr);
       if(alreadyExists)continue;
 
-   
-// Resolver hora de inicio y hora fin (con overrides por fecha)
-let timeStr="";
-let endStr="";
-const override=r.timeOverrides?.[dateStr];
-if(override){
-  if(typeof override==="string"){
-    timeStr=override;
-  }else{
-    timeStr=override.start||"";
-    endStr=override.end||"";
-  }
-}else{
-  const t=r.times?.[dayNum];
-  if(typeof t==="string"){
-    // Formato antiguo: solo hora inicio
-    timeStr=t;
-    endStr="";
-  }else if(t && typeof t==="object"){
-    // Formato nuevo: {start, end}
-    timeStr=t.start||"";
-    endStr=t.end||"";
-  }else{
-    timeStr="";
-    endStr="";
-  }
-}
+      // Resolver hora de inicio y hora fin (con overrides por fecha)
+      let timeStr="";
+      let endStr="";
+      const override=r.timeOverrides?.[dateStr];
+      if(override){
+        if(typeof override==="string"){
+          timeStr=override;
+        }else{
+          timeStr=override.start||"";
+          endStr=override.end||"";
+        }
+      }else{
+        const t=r.times?.[dayNum];
+        if(typeof t==="string"){
+          // Formato antiguo: solo hora inicio
+          timeStr=t;
+          endStr="";
+        }else if(t && typeof t==="object"){
+          // Formato nuevo: {start, end}
+          timeStr=t.start||"";
+          endStr=t.end||"";
+        }else{
+          timeStr="";
+          endStr="";
+        }
+      }
 
-agendaTasks.push({
-  id:"rt_"+r.id+"_"+dateStr,
-  name:r.name,
-  xpEarned:0,
-  time:timeStr,
-  endTime:endStr,
-  priority:r.priority||"mid",
-  category:r.category||"Personal",
-  date:dateStr,
-  notes:"🔁 Recurrente",
-  done:false,failed:false,
-  timesPerDay:r.timesPerDay||1,
-  timesCompleted:0,
-  recurringId:r.id
-});
+      agendaTasks.push({
+        id:"rt_"+r.id+"_"+dateStr,
+        name:r.name,
+        xpEarned:0,
+        time:timeStr,
+        endTime:endStr,
+        priority:r.priority||"mid",
+        category:r.category||"Personal",
+        date:dateStr,
+        notes:"🔁 Recurrente",
+        done:false,failed:false,
+        timesPerDay:r.timesPerDay||1,
+        timesCompleted:0,
+        recurringId:r.id,
+        ...(r.dayChecks&&r.dayChecks[dateStr]&&r.dayChecks[dateStr].length?{checks:JSON.parse(JSON.stringify(r.dayChecks[dateStr]))}:{})
+      });
     }
   });
 }
+
 
 function updateTaskTimesInputs(){
   const n=parseInt(document.getElementById("taskTimesPerDay")?.value)||1;
