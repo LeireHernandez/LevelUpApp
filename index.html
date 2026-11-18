@@ -2468,6 +2468,7 @@ textarea {
 .sched-fs-tools button{ width:28px; height:28px; border-radius:50%; border:1px solid var(--border2); background:var(--card); color:var(--text2);
   font-size:.85rem; line-height:1; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.18); padding:0; }
 body.sched-fs-open{ overflow:hidden; }
+#scheduleGrid.only-today{ grid-template-columns:56px 1fr !important; min-width:100%; }
 
 </style>
 </head>
@@ -3404,6 +3405,7 @@ body.sched-fs-open{ overflow:hidden; }
   <div class="sched-wrap" id="schedWrap">
   <div class="sched-fs-tools">
     <button onclick="changeScheduleZoom(-1)" title="Zoom out">−</button>
+    <button id="schedTodayOnlyBtn" onclick="toggleScheduleTodayOnly()" title="Ver solo hoy" style="width:auto;padding:0 12px;border-radius:14px;font-size:.72rem">Hoy</button>
     <button onclick="changeScheduleZoom(1)" title="Zoom in">+</button>
     <button onclick="toggleScheduleFullscreen(false)" title="Cerrar">✕</button>
   </div>
@@ -5325,6 +5327,12 @@ function getAllNeeds(){
   return [...activeCore, ...customNeeds];
 }
 
+function toggleScheduleTodayOnly(){
+  window._schedOnlyToday=!window._schedOnlyToday;
+  if(window._schedOnlyToday) scheduleWeekOffset=0;
+  window._schedAutoScroll=true;
+  renderSchedule();
+}
 
 // Devuelve el check point activo: el último cuyo deadline ya pasó (o está pasando)
 function getActiveWaterCheckpoint(){
@@ -6790,6 +6798,7 @@ function saveGoal(){
 
 function toggleScheduleFullscreen(on){
   const w=document.getElementById("schedWrap"); if(!w)return;
+  if(!on) window._schedOnlyToday=false;
   w.classList.toggle("fs",!!on);
   document.body.classList.toggle("sched-fs-open",!!on);
   window._schedAutoScroll=false;
@@ -8702,12 +8711,18 @@ function renderSchedule(){
   const todayDow=new Date().getDay();
   const now=new Date();
   const nowMin=now.getHours()*60+now.getMinutes();
+  // En pantalla completa, el botón "Hoy" deja solo la columna de hoy
+const onlyToday = !!window._schedOnlyToday && !!document.getElementById("schedWrap")?.classList.contains("fs");
+el.classList.toggle("only-today",onlyToday);
+const _otBtn=document.getElementById("schedTodayOnlyBtn");
+if(_otBtn) _otBtn.textContent=onlyToday?"Semana":"Hoy";
 
   // ---------- Cabecera ----------
   let html=`<div class="sched-corner"></div>`;
   order.forEach((d,i)=>{
     const dt=new Date(mon);dt.setDate(mon.getDate()+i);
     const isToday=scheduleWeekOffset===0 && d===todayDow;
+    if(onlyToday && !isToday) return;
     html+=`<div class="sched-head${isToday?" today":""}">
       <span class="sched-day-name">${dayNames[i]}</span>
       <span class="sched-day-num">${dt.getDate()}</span>
@@ -8724,6 +8739,7 @@ function renderSchedule(){
     const dt=new Date(mon);dt.setDate(mon.getDate()+i);
     const key=dk(dt);
     const isToday=scheduleWeekOffset===0 && d===todayDow;
+    if(onlyToday && !isToday) return;
 
     let col=`<div class="sched-col${isToday?" today":""}" data-date="${key}">`;
 
